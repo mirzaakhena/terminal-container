@@ -6,7 +6,7 @@ labels: [crane, controls]
 reporter: mirza
 assign_to: claude
 created: 2026-10-08 12:49:49
-updated: 2026-10-08 13:05:06
+updated: 2026-10-08 13:05:18
 related: [261008104607]
 blocked_by: []
 ---
@@ -42,6 +42,7 @@ person had let go.
 - 2026-10-08 12:49:49 backlog
 - 2026-10-08 12:50:16 todo
 - 2026-10-08 12:55:54 in_progress
+- 2026-10-08 13:05:18 review
 
 ## Notes
 - 2026-10-08 13:05:06: test run — `npm run build && npm test && npm run test:e2e` exited 0 after 1m39s, on content fingerprint d470db67a2f1861e08ea6e6bc9d5ce2eb226d0ec (the same before and after the run; .kerjaan/ left out).
