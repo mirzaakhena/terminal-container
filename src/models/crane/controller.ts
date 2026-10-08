@@ -1,5 +1,8 @@
 import { CONTAINER_SPECS } from '../container';
-import { floorUnder, pickUp, setDown, type CarriedContainer, type Footprint, type World } from '../../sim/world';
+import { containerUnder, floorUnder, pickUp, setDown, type CarriedContainer, type Footprint, type World } from '../../sim/world';
+import { BAY_PITCH, BLOCK_MARGIN, ROW_PITCH } from '../yard';
+import { SLOTS } from '../truck/loads';
+import { LANE_Z } from './spec';
 import { SPEEDS, SPREADER, type CraneSpec } from './spec';
 
 export type AxisName = 'gantry' | 'trolley' | 'hoist';
@@ -94,6 +97,78 @@ export class CraneController {
 
   stop(name: AxisName) {
     this.axis(name).stop(this.profile(name));
+  }
+
+  /**
+   * How close (m) a stop must be to a slot centre for the crane to finish positioning itself:
+   * half a bay along the block and half a row across it, so inside the block every stop lands on a slot.
+   */
+  static SNAP_RANGE = { gantry: BAY_PITCH / 2 + 0.05, trolley: ROW_PITCH / 2 + 0.05 } as const;
+
+  /** Where an axis would come to rest if its button were let go now. */
+  stoppingPoint(name: AxisName): number {
+    const a = this.axis(name);
+    const brake = (a.vel * a.vel) / (2 * this.profile(name).accel);
+    return Math.min(a.max, Math.max(a.min, a.pos + Math.sign(a.vel) * brake));
+  }
+
+  /**
+   * Positions the crane can line up with, for the current spreader length:
+   * gantry — bay (or 40ft bay pair) centres and the matching trailer positions of parked trucks;
+   * trolley — row centres and the truck lane.
+   */
+  snapPositions(name: 'gantry' | 'trolley'): number[] {
+    const { config } = this.world.block;
+    if (name === 'trolley') {
+      const rows = Array.from({ length: config.rows }, (_, r) => BLOCK_MARGIN + (r + 0.5) * ROW_PITCH);
+      return [LANE_Z, ...rows];
+    }
+    const feet = this.carried ? (this.carried.type === '20GP' ? 20 : 40) : this.spreaderFeet;
+    const xs: number[] = [];
+    // Over the lane, line up with trailer positions; over the block, with bays.
+    const overLane = this.trolley.target < BLOCK_MARGIN - 0.2;
+    if (overLane) {
+      for (const t of this.world.trucks) {
+        if (Math.abs(t.z - this.trolley.target) > 1.5) continue;
+        for (const slot of Object.values(SLOTS)) if (slot.feet === feet) xs.push(t.x + slot.centreX);
+      }
+    } else if (feet === 20) for (let i = 0; i < config.bays; i++) xs.push(BLOCK_MARGIN + (i + 0.5) * BAY_PITCH);
+    else for (let i = 0; i + 1 < config.bays; i += 2) xs.push(BLOCK_MARGIN + (i + 1) * BAY_PITCH);
+    return xs;
+  }
+
+  /** Stops a hold-to-move axis; if it comes to rest near a slot centre, it finishes the move onto it. */
+  stopAndAlign(name: AxisName) {
+    const a = this.axis(name);
+    a.stop(this.profile(name));
+    if (name === 'hoist') return;
+    const rest = a.target;
+    const range = CraneController.SNAP_RANGE[name];
+    const best = this.snapPositions(name).reduce<number | null>(
+      (b, v) => (Math.abs(v - rest) < range && (b === null || Math.abs(v - rest) < Math.abs(b - rest)) ? v : b),
+      null,
+    );
+    if (best !== null) a.setTarget(best);
+  }
+
+  /** Would locking work right now? Same checks as lock(), without doing it. */
+  canLock(): LockResult {
+    if (this.carried) return { ok: false, reason: 'The spreader is already holding a container.' };
+    if (this.moving) return { ok: false, reason: 'Wait for the crane to stop.' };
+    const hit = containerUnder(this.world, this.gantry.pos, this.trolley.pos, this.hoist.pos);
+    if (!hit) return { ok: false, reason: 'Lower the spreader squarely onto a container first.' };
+    if (CONTAINER_SPECS[hit.type].nominalFeet !== this.spreaderFeet) {
+      return { ok: false, reason: `Set the spreader to ${CONTAINER_SPECS[hit.type].nominalFeet}ft for this container.` };
+    }
+    return { ok: true };
+  }
+
+  /** Would releasing work right now? Same checks as release(), without doing it. */
+  canRelease(): LockResult {
+    if (!this.carried) return { ok: false, reason: 'The spreader is not holding anything.' };
+    if (this.moving) return { ok: false, reason: 'Wait for the crane to stop.' };
+    const r = setDown(this.world, this.carried, this.gantry.pos, this.trolley.pos, this.hoist.pos - this.hangingHeight);
+    return r.ok ? { ok: true } : r;
   }
 
   setSpreader(feet: 20 | 40): LockResult {

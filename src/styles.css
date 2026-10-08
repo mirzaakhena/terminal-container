@@ -241,3 +241,37 @@ button {
 .slider span { color: var(--text-muted); }
 .slider output { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
 .slider input { accent-color: var(--brand); }
+
+.crane-panel { max-width: min(560px, calc(100% - 32px)); }
+.jog-row { display: grid; grid-template-columns: 58px 1fr 1fr 70px 22px 22px; align-items: center; gap: 6px; font-size: 13px; }
+.jog-row > span { color: var(--text-muted); }
+.jog-row output { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.jog {
+  border: 0;
+  border-radius: 8px;
+  background: #f1f3fa;
+  padding: 8px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  touch-action: none;
+  user-select: none;
+}
+.jog:active:not(:disabled) { background: var(--brand); color: #fff; }
+.jog:disabled { opacity: 0.4; cursor: default; }
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 5px;
+  border: 1px solid #d9ddea;
+  background: #fff;
+  font: 600 10px/1 'Inter', system-ui, sans-serif;
+  color: var(--text-muted);
+}
+.chip kbd, .segmented kbd { margin-left: 4px; }
+.chip.primary kbd { background: transparent; color: #fff; border-color: rgba(255, 255, 255, 0.5); }
+.chip.primary:disabled { background: #9db0f3; }
+.badge { margin-left: 8px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #f1f3fa; color: var(--text-muted); }
+.badge.on { background: #e7f6ee; color: #146c3c; }
