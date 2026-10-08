@@ -6,7 +6,7 @@ labels: [ui, dashboard]
 reporter: mirza
 assign_to: claude
 created: 2026-10-08 10:46:26
-updated: 2026-10-08 10:47:39
+updated: 2026-10-08 12:00:41
 related: [261008104608]
 blocked_by: [261008104601]
 ---
@@ -35,6 +35,7 @@ buttons — filled with sample terminal data, that stays readable on top of the
 
 ## History
 - 2026-10-08 10:46:26 backlog
+- 2026-10-08 12:00:41 todo
 
 ## Notes
 (none yet)
