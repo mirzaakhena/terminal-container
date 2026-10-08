@@ -1,6 +1,6 @@
 ---
 language: English
-test_command: npm run build && npm test
+test_command: npm run build && npm test && npm run test:e2e
 long_lived_branches: []
 owner_explanation: off
 explanation_translation: false

@@ -23,10 +23,20 @@ The view in the header can also be chosen with `?view=<id>` in the address.
 ## Checks
 
 ```bash
-npm run build && npm test
+npm run build && npm test && npm run test:e2e
 ```
 
-`build` type-checks and bundles the app; `test` runs the unit tests (Vitest).
+`build` type-checks and bundles the app; `test` runs the unit tests (Vitest);
+`test:e2e` opens the app in a headless browser and presses the main controls
+(Playwright). The browser check starts its own dev server on port 5199.
+
+The browser check needs Playwright's Chromium, installed once with:
+
+```bash
+npx playwright install chromium
+```
+
+Run only the browser check with `npm run test:e2e`; add `-- --headed` to watch it.
 
 ## Conventions
 

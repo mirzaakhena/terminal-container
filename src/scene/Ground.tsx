@@ -37,7 +37,7 @@ export function Ground({ showGrid }: { showGrid: boolean }) {
         <shadowMaterial color={palette.shadow} opacity={0.22} transparent />
       </mesh>
       {showGrid && (
-        <group position-y={0.02}>
+        <group name="reference-grid" position-y={0.02}>
           <lineSegments geometry={cells}>
             <lineBasicMaterial color={palette.groundLine} />
           </lineSegments>

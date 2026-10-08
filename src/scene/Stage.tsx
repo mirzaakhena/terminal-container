@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
+import { debugHandle } from '../lib/debug';
 import { PCFSoftShadowMap } from 'three';
 import { palette } from '../config/theme';
 import { HOME_POSITION } from './cameraMath';
@@ -19,6 +20,13 @@ interface StageProps {
   children?: ReactNode;
 }
 
+/** Development aid: lets browser tests look into the scene (for example, whether the grid is shown). */
+function ExposeScene() {
+  const scene = useThree((s) => s.scene);
+  if (import.meta.env.DEV) debugHandle().scene = scene;
+  return null;
+}
+
 /** The 3D world every view is drawn into: camera, lights, ground and scale aids. */
 export function Stage({ cameraApi, showGrid, homeDistance, homeAzimuth, children }: StageProps) {
   return (
@@ -33,6 +41,7 @@ export function Stage({ cameraApi, showGrid, homeDistance, homeAzimuth, children
       <Lights />
       <Ground showGrid={showGrid} />
       {showGrid && <ScaleRuler position={[-5, 0, 26]} />}
+      <ExposeScene />
       <CameraRig api={cameraApi} homeDistance={homeDistance} homeAzimuth={homeAzimuth} />
       {children}
     </Canvas>

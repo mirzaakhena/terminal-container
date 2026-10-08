@@ -4,3 +4,5 @@ dist/
 *.log
 .playwright-mcp/
 *.tsbuildinfo
+test-results/
+playwright-report/

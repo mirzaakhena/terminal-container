@@ -5,6 +5,7 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { Vector3 } from 'three';
 import { dolly, orbitY, homePosition, HOME_TARGET, MIN_DISTANCE, MAX_DISTANCE, type Vec3 } from './cameraMath';
 import type { CameraApiRef } from './cameraApi';
+import { debugHandle } from '../lib/debug';
 
 interface Tween {
   fromPos: Vector3;
@@ -60,6 +61,13 @@ export function CameraRig({ api, homeDistance, homeAzimuth = 0 }: { api: CameraA
         go([target[0] + offset[0] * k, target[1] + offset[1] * k, target[2] + offset[2] * k], target);
       },
     };
+    if (import.meta.env.DEV) {
+      debugHandle().camera = {
+        position: () => camera.position.toArray(),
+        target: () => controls.current?.target.toArray(),
+        moving: () => !!tween.current,
+      };
+    }
     return () => {
       api.current = null;
     };

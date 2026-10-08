@@ -5,7 +5,7 @@ import { palette } from '../config/theme';
 export function ScaleRuler({ position = [0, 0, 0] as [number, number, number], length = 10 }) {
   const ticks = Array.from({ length: length + 1 }, (_, i) => i);
   return (
-    <group position={position}>
+    <group name="scale-ruler" position={position}>
       <mesh position={[length / 2, 0.03, 0]} castShadow receiveShadow>
         <boxGeometry args={[length, 0.04, 0.35]} />
         <meshStandardMaterial color={palette.brand} />
