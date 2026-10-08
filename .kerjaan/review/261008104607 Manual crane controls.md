@@ -33,6 +33,7 @@ small readout showing where the crane is.
 - 2026-10-08 10:46:26 backlog
 - 2026-10-08 12:00:41 todo
 - 2026-10-08 12:00:41 in_progress
+- 2026-10-08 12:06:06 review
 
 ## Notes
 - 2026-10-08 12:06:05: test run — `npm run build && npm test` exited 0 after 0m13s, on content fingerprint 0182c3313e20ca630dfc0d35474229442735b276 (the same before and after the run; .kerjaan/ left out).
