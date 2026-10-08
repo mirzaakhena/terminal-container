@@ -90,3 +90,39 @@ describe('truck motion', () => {
     expect(() => m.driveTo(10)).toThrow(/forward/);
   });
 });
+
+import { peakArticulation } from './truckMotion';
+
+describe('trailer angle limit', () => {
+  /** A U-turn with a 5 m radius: far tighter than a 40ft trailer can follow. */
+  const uTurn = () => createRoute([[0, 0], [40, 0], [40, -10], [0, -10]], 5);
+
+  it('the demo routes stay well inside the limit and still drive exactly as before', () => {
+    expect(peakArticulation(route())).toBeLessThan(MAX_ARTICULATION * 0.8);
+    const m = new TruckMotion(route());
+    expect(m.routeProblem).toBeNull();
+  });
+
+  it('a route too tight for the truck is refused before it sets off, saying why', () => {
+    const m = new TruckMotion(uTurn());
+    expect(m.peakArticulation).toBeGreaterThan(MAX_ARTICULATION);
+    expect(m.routeProblem).toMatch(/too tight.*75° is the limit/);
+    expect(() => m.driveTo(m.route.length)).toThrow(/too tight/);
+    expect(m.moving).toBe(false);
+  });
+
+  it('even if driven anyway, the trailer never passes the limit and its wheels match the drawn trailer', () => {
+    const m = new TruckMotion(uTurn(), 0, { acceptTightCorners: true });
+    m.driveTo(m.route.length);
+    let peak = 0;
+    run(m, () => {
+      const p = m.pose();
+      peak = Math.max(peak, Math.abs(p.articulation));
+      // The drawn trailer points from its wheels to the kingpin, one trailer-length apart.
+      const heading = p.heading - p.articulation;
+      const drawnAxle = [p.x - Math.cos(heading) * TRAILER_WHEELBASE, p.z + Math.sin(heading) * TRAILER_WHEELBASE];
+      expect(Math.hypot(drawnAxle[0] - p.trailerAxle[0], drawnAxle[1] - p.trailerAxle[1])).toBeLessThan(0.01);
+    });
+    expect(peak).toBeLessThanOrEqual(MAX_ARTICULATION + 1e-9);
+  });
+});

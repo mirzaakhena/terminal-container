@@ -17,10 +17,18 @@ const ROUTE = createRoute(
 );
 // The crane lane stop sits halfway along the last straight.
 ROUTE.stops['Crane lane'] = ROUTE.stops['Second corner'] + (ROUTE.length - ROUTE.stops['Second corner']) / 2;
-const STOP_ORDER = ['First corner', 'Second corner', 'Crane lane', 'Exit'];
+/** A U-turn far tighter than a 40ft trailer can follow, to show such routes being refused. */
+const TIGHT = createRoute([[-40, 10], [10, 10], [10, 0], [-40, 0]], 5, { Gate: 0, Exit: 3 });
+
+const ROUTES = {
+  demo: { label: 'Demo route', route: ROUTE, stops: ['First corner', 'Second corner', 'Crane lane', 'Exit'] },
+  tight: { label: 'Tight U-turn (5 m)', route: TIGHT, stops: ['Exit'] },
+} as const;
+type RouteId = keyof typeof ROUTES;
 const LOAD: TrailerLoad = { full40: '40HC' };
 
 const store = createStore({
+  routeId: 'demo' as RouteId,
   command: null as null | { kind: 'drive'; stop: string } | { kind: 'reset' },
   speed: 0,
   articulation: 0,
@@ -35,14 +43,20 @@ const lineMat = new MeshBasicMaterial({ color: '#ffffff' });
 const TRACE_POINTS = 4000;
 
 export function DriveView() {
-  const motion = useMemo(() => new TruckMotion(ROUTE), []);
+  const routeId = store.use((s) => s.routeId);
+  return <DriveScene key={routeId} routeId={routeId} />;
+}
+
+function DriveScene({ routeId }: { routeId: RouteId }) {
+  const route = ROUTES[routeId].route;
+  const motion = useMemo(() => new TruckMotion(route), [route]);
   const truck = useRef<Group>(null);
   const trailer = useRef<Group>(null);
   const traceCount = useRef(0);
   const lastReport = useRef(0);
   const { showTrace } = store.use();
 
-  const road = useMemo(() => sampleRoute(ROUTE, 0.5), []);
+  const road = useMemo(() => sampleRoute(route, 0.5), [route]);
   const traceGeom = useMemo(() => {
     const g = new BufferGeometry();
     g.setAttribute('position', new Float32BufferAttribute(new Float32Array(TRACE_POINTS * 3), 3));
@@ -89,8 +103,8 @@ export function DriveView() {
     <group>
       <RoadRibbon points={road} width={6} material={roadMat} />
       <RoadRibbon points={road} width={0.15} y={0.015} material={lineMat} />
-      {Object.entries(ROUTE.stops).filter(([n]) => n !== 'First corner' && n !== 'Second corner').map(([name, s]) => {
-        const p = ROUTE.at(s);
+      {Object.entries(route.stops).filter(([n]) => n !== 'First corner' && n !== 'Second corner').map(([name, s]) => {
+        const p = route.at(s);
         return <Label key={name} position={[p.x, 0.1, p.z + 4.5]} title={name} />;
       })}
       <primitive object={trace} visible={showTrace} />
@@ -107,19 +121,29 @@ export function DriveView() {
 const deg = (r: number) => Math.round((r * 180) / Math.PI);
 
 export function DrivePanel() {
-  const { speed, articulation, s, moving, showTrace, error } = store.use();
-  const nextStops = STOP_ORDER.filter((n) => ROUTE.stops[n] > s + 0.05);
+  const { speed, articulation, s, moving, showTrace, error, routeId } = store.use();
+  const { route, stops } = ROUTES[routeId];
+  const nextStops = stops.filter((n) => route.stops[n] > s + 0.05);
+  const problem = useMemo(() => new TruckMotion(route).routeProblem, [route]);
   return (
     <div className="view-panel card">
       <div className="panel-title">Truck TRK-01 <span className="muted">· 1 × 40ft HC</span></div>
+      <div className="segmented">
+        {(Object.keys(ROUTES) as RouteId[]).map((id) => (
+          <button key={id} className={routeId === id ? 'active' : ''} disabled={moving} onClick={() => store.set({ routeId: id, error: null, s: 0, speed: 0, articulation: 0 })}>
+            {ROUTES[id].label}
+          </button>
+        ))}
+      </div>
+      {problem && <div className="notice" role="status"><strong>Route refused.</strong> {problem}</div>}
       <div className="readouts">
         <div><span>Speed</span><strong>{(speed * 3.6).toFixed(1)} km/h</strong></div>
         <div><span>Trailer angle</span><strong>{deg(articulation)}°</strong></div>
         <div><span>Distance</span><strong>{s.toFixed(1)} m</strong></div>
       </div>
       <div className="row-wrap">
-        {STOP_ORDER.map((n) => (
-          <button key={n} className="chip" disabled={moving || !nextStops.includes(n)} onClick={() => store.set({ command: { kind: 'drive', stop: n } })}>
+        {stops.map((n) => (
+          <button key={n} className="chip" disabled={moving || !!problem || !nextStops.includes(n)} onClick={() => store.set({ command: { kind: 'drive', stop: n } })}>
             Drive to {n}
           </button>
         ))}
