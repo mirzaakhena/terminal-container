@@ -35,6 +35,7 @@ at a chosen point.
 - 2026-10-08 10:46:26 backlog
 - 2026-10-08 11:26:26 todo
 - 2026-10-08 11:33:33 in_progress
+- 2026-10-08 11:38:10 review
 
 ## Notes
 - 2026-10-08 11:38:10: test run — `npm run build && npm test` exited 0 after 0m12s, on content fingerprint 96ab7ac1b332c4065fced94f8d80d34b9e796e01 (the same before and after the run; .kerjaan/ left out).
