@@ -6,7 +6,7 @@ labels: [model, crane]
 reporter: mirza
 assign_to: claude
 created: 2026-10-08 10:46:26
-updated: 2026-10-08 11:56:59
+updated: 2026-10-08 11:58:50
 related: [261008104605, 261008104603]
 blocked_by: [261008104601, 261008104602]
 ---
@@ -45,6 +45,7 @@ and 40ft and can lock onto and release a container.
 - 2026-10-08 11:49:03 review
 - 2026-10-08 11:53:48 in_progress
 - 2026-10-08 11:56:59 review
+- 2026-10-08 11:58:50 done
 
 ## Notes
 - 2026-10-08 11:49:03: test run — `npm run build && npm test` exited 0 after 0m12s, on content fingerprint e9d53516fc96f7f57ae4111c43ab64e3844c3c73 (the same before and after the run; .kerjaan/ left out).
@@ -88,3 +89,32 @@ Not verified by running anything (judged by reading and by the worker's carried 
 
 - 2026-10-08 11:56:49: test run — `npm run build && npm test` exited 0 after 0m12s, on content fingerprint 7b30e4325fb5b6997e988f00b8cdcaa2feddf3bb (the same before and after the run; .kerjaan/ left out).
 - Fix after review round 1 (spreader rose into the operator cab at the top limit): the cab now hangs between the two girders on the lane side of the trolley, beside the spreader's path instead of above it. The crane's rigid parts (legs, beams, girders, power house, trolley, cab) are now one shared list of boxes that both the drawing and a new clearance test use. The test moves the spreader, headblock and every container type through the trolley's whole travel, from the ground to the top limit, at both spreader lengths, for three block sizes, and checks that nothing hanging touches any part of the crane, and that the cab never touches the frame. With the old cab position put back temporarily, the test fails with "spreader hits cab"; with the fix it passes.
+
+### Review 2026-10-08 (round 2)
+Reviewed at level quick, round 2, at commit 4cf5ad2: the project's checks were carried from the worker's run, and only what changed since round 1 (commit c9dd950) was read against the finding that round sent back. I re-checked that finding the way it was first found, in the browser, which goes past quick.
+
+Decision: **done**. Every criterion is met.
+
+Checks:
+- `test-run.sh --check 261008104606` answered SAME: `npm run build && npm test` exited 0 at 2026-10-08 11:56:49 on fingerprint 7b30e4325fb5b6997e988f00b8cdcaa2feddf3bb. Not run again.
+- `explain.sh check`: no explanation written (setting is `off`), nothing to check.
+- The work is in the main tree; there is no separate branch for this ticket. `git status` is clean.
+- Changed since round 1: `src/models/crane/frame.ts` (new), `src/models/crane/frame.test.ts` (new), `src/models/crane/RtgCrane.tsx`. Nothing else in `src/`.
+
+Round 1 finding (spreader rose into the operator cab): fixed.
+- The cab now sits between the two girders (x −0.9 to 0.9 m) and on the lane side of the trolley (z −3.5 to −1.65 m from the trolley centre). Everything that hangs from the trolley is at most 1.22 m from the trolley centre across the block (spreader end beams and the widest container are 2.44 m wide; the headblock is ±1.1 m; the ropes ±0.8 m). That leaves about 0.43 m between the cab and anything hanging, at any height and with either spreader length.
+- The spreader and headblock boxes in the new clearance test have the same size as what `RtgCrane.tsx` draws (end beams ±(length/2 + 0.18) m long and the full spreader width; headblock ±1.3 by ±1.1 m), so the test checks the shapes the user actually sees. The crane's fixed parts and trolley parts are now drawn from the same list the test uses.
+- The cab stays below the girder underside and clear of the legs, the portal beams and the leg ties along the trolley's whole travel. The second new test checks this.
+- In the browser (`?view=crane`, Playwright with GPU), trolley 8 m, hoist 18.18 m (the top limit): with 20ft (6.06 m) and with 40ft (12.19 m), the spreader went all the way to the top and nothing blocked it. The cab now hangs to one side of the spreader, under the trolley on the lane side, and no longer covers it.
+
+Criteria:
+1. Crane over the block, with the truck lane under one leg span: carried from round 1. The crane's layout (`spec.ts`) has not changed since c9dd950, and the browser still shows it.
+2. Width and height follow rows and tiers: carried from round 1. `spec.ts` has not changed since c9dd950.
+3. Movements stop at their limits and do not pass through the ground or the frame: met now (see above). The limits in `spec.ts` have not changed, so the High Cube clearance from criterion 2 is kept.
+4. Spreader stretches between 20ft and 40ft: met. The telescoping code in `RtgCrane.tsx` is unchanged. This time I saw both lengths in the browser (6.06 m and 12.19 m).
+5, 6, 7. Lock and carry, refused locks, speeds: carried from round 1. `controller.ts` and `spec.ts` have not changed since c9dd950.
+
+Notes (not blocking):
+- The clearance test checks three hoist heights (bottom, middle, top) and three trolley positions. That is enough for the cab, because the cab is kept apart from the spreader across the block, not by height.
+
+Not verified by running anything, apart from the worker's carried test run: criteria 2, 5, 6, 7 (carried from round 1, code unchanged).
