@@ -15,6 +15,7 @@ import { Label } from '../scene/Label';
 import { DEFAULT_BLOCK } from './BlockView';
 import { select } from '../ui/dashboard/selection';
 import { clearStageTimes } from '../ui/dashboard/yardStats';
+import { clearEvents } from '../ui/dashboard/events';
 import type { ThreeEvent } from '@react-three/fiber';
 import { debugHandle } from '../lib/debug';
 
@@ -48,6 +49,7 @@ exposeForDebugging();
 export function resetYard() {
   yard = createYard();
   clearStageTimes();
+  clearEvents();
   exposeForDebugging();
   yardStore.set({ jobs: [], time: 0, message: null });
   bump();
