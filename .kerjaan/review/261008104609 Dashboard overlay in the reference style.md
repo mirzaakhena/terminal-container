@@ -37,6 +37,7 @@ buttons — filled with sample terminal data, that stays readable on top of the
 - 2026-10-08 10:46:26 backlog
 - 2026-10-08 12:00:41 todo
 - 2026-10-08 12:14:46 in_progress
+- 2026-10-08 12:21:27 review
 
 ## Notes
 - 2026-10-08 12:21:27: test run — `npm run build && npm test` exited 0 after 0m13s, on content fingerprint 0f6856e7be14f973e9c07f0dad22681bf8c8b146 (the same before and after the run; .kerjaan/ left out).
