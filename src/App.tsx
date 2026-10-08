@@ -4,6 +4,7 @@ import { createCameraApi } from './scene/cameraApi';
 import { CameraControls } from './ui/CameraControls';
 import { Header } from './ui/Header';
 import { findView } from './views';
+import { Dashboard } from './ui/dashboard/Dashboard';
 
 const initialView = () => findView(new URLSearchParams(location.search).get('view')).id;
 
@@ -26,8 +27,9 @@ export function App() {
         <view.Component key={view.id} />
       </Stage>
       <Header viewId={view.id} onViewChange={changeView} />
+      {view.id === 'yard' && <Dashboard />}
       {view.Panel && <view.Panel />}
-      <CameraControls api={cameraApi} showGrid={showGrid} onToggleGrid={() => setShowGrid((s) => !s)} />
+      <CameraControls className={view.id === 'yard' ? 'beside-detail' : ''} api={cameraApi} showGrid={showGrid} onToggleGrid={() => setShowGrid((s) => !s)} />
     </div>
   );
 }

@@ -5,14 +5,15 @@ interface Props {
   api: CameraApiRef;
   showGrid: boolean;
   onToggleGrid(): void;
+  className?: string;
 }
 
 const QUARTER = Math.PI / 4;
 
 /** Vertical button strip at the scene edge, as in the style reference. */
-export function CameraControls({ api, showGrid, onToggleGrid }: Props) {
+export function CameraControls({ api, showGrid, onToggleGrid, className = '' }: Props) {
   return (
-    <div className="camera-controls card" role="toolbar" aria-label="Camera">
+    <div className={`camera-controls card ${className}`} role="toolbar" aria-label="Camera">
       <button title="Zoom in" onClick={() => api.current?.zoom(0.7)}><PlusIcon /></button>
       <button title="Zoom out" onClick={() => api.current?.zoom(1 / 0.7)}><MinusIcon /></button>
       <span className="divider" />

@@ -13,6 +13,9 @@ import type { World } from '../sim/world';
 import { RoadRibbon } from '../scene/RoadRibbon';
 import { Label } from '../scene/Label';
 import { DEFAULT_BLOCK } from './BlockView';
+import { select } from '../ui/dashboard/selection';
+import { clearStageTimes } from '../ui/dashboard/yardStats';
+import type { ThreeEvent } from '@react-three/fiber';
 import { debugHandle } from '../lib/debug';
 
 /** The whole terminal: one block, its crane, and trucks coming and going for queued jobs. */
@@ -43,6 +46,7 @@ exposeForDebugging();
 
 export function resetYard() {
   yard = createYard();
+  clearStageTimes();
   exposeForDebugging();
   yardStore.set({ jobs: [], time: 0, message: null });
   bump();
@@ -52,6 +56,23 @@ const L = blockLength(DEFAULT_BLOCK);
 const W = blockWidth(DEFAULT_BLOCK);
 const laneMat = new MeshBasicMaterial({ color: palette.asphalt });
 const laneLineMat = new MeshBasicMaterial({ color: '#ffffff' });
+
+/** Pointer handlers that make a part of the scene clickable, with a hand cursor on hover. */
+function pickable(onPick: () => void) {
+  return {
+    onClick: (e: ThreeEvent<MouseEvent>) => {
+      e.stopPropagation();
+      onPick();
+    },
+    onPointerOver: (e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation();
+      document.body.style.cursor = 'pointer';
+    },
+    onPointerOut: () => {
+      document.body.style.cursor = '';
+    },
+  };
+}
 
 /** The truck while it drives: pose read from its motion every frame. */
 function DrivingTruck() {
@@ -108,12 +129,16 @@ export function YardView() {
       <RoadRibbon points={road} width={LANE_WIDTH} material={laneMat} />
       <RoadRibbon points={road} width={0.12} y={0.015} material={laneLineMat} />
       <Label position={[gate.x + 6, 0.1, gate.z - 4]} title="Gate" />
-      <Block state={yard.crane.world.block} name="Block A" bayLabelZ={yard.crane.spec.legZ[0] - 1.6} />
+      <group {...pickable(() => select({ kind: 'block' }))}>
+        <Block state={yard.crane.world.block} name="Block A" bayLabelZ={yard.crane.spec.legZ[0] - 1.6} />
+      </group>
       {yard.crane.world.trucks.map((t) => (
         <Truck key={t.id} position={[t.x, 0, t.z]} load={t.load} colors={t.colors} />
       ))}
       <DrivingTruck key={yard.truck ? `${yard.truck.id}:${yard.truck.phase}` : 'none'} />
-      <RtgCrane crane={yard.crane} />
+      <group {...pickable(() => select({ kind: 'crane' }))}>
+        <RtgCrane crane={yard.crane} />
+      </group>
     </group>
   );
 }
@@ -153,7 +178,7 @@ export function YardPanel() {
   const size = SIZES.find((s) => s.id === sizeId)!;
   const [addrs, setAddrs] = useState<Address[]>([blank(), blank()]);
   const n = size.types.length;
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   const say = (ok: boolean, text: string) => yardStore.set({ message: { ok, text } });
 
@@ -194,7 +219,10 @@ export function YardPanel() {
         </button>
       </div>
       {collapsed ? (
-        visible[0] && <div className="hint">{visible[0].id} · {visible[0].status === 'running' ? visible[0].step : visible[0].status}</div>
+        (() => {
+          const j = jobs.find((x) => x.status === 'running') ?? visible[0];
+          return j ? <div className="hint">{j.id} · {j.status === 'running' ? j.step : j.status}</div> : <div className="hint">No jobs yet — Show to add one.</div>;
+        })()
       ) : (
       <>
       <div className="row-wrap">
