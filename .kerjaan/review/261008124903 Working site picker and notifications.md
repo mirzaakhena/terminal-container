@@ -33,6 +33,7 @@ unread ones.
 - 2026-10-08 12:49:49 backlog
 - 2026-10-08 13:26:18 todo
 - 2026-10-08 13:26:18 in_progress
+- 2026-10-08 13:32:19 review
 
 ## Notes
 - 2026-10-08 13:32:19: test run — `npm run build && npm test && npm run test:e2e` exited 0 after 1m46s, on content fingerprint b9b7beacaecae4498b0a6b83a07bcbbd6fb49431 (the same before and after the run; .kerjaan/ left out).
