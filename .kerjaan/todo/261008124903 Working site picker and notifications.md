@@ -6,7 +6,7 @@ labels: [ui, dashboard]
 reporter: mirza
 assign_to: claude
 created: 2026-10-08 12:49:49
-updated: 2026-10-08 12:50:16
+updated: 2026-10-08 13:26:18
 related: [261008104609]
 blocked_by: []
 ---
@@ -31,6 +31,7 @@ unread ones.
 
 ## History
 - 2026-10-08 12:49:49 backlog
+- 2026-10-08 13:26:18 todo
 
 ## Notes
 (none yet)
