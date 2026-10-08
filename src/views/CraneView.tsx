@@ -10,6 +10,7 @@ import { RoadRibbon } from '../scene/RoadRibbon';
 import { MeshBasicMaterial } from 'three';
 import { palette } from '../config/theme';
 import { DEFAULT_BLOCK } from './BlockView';
+import { debugHandle } from '../lib/debug';
 
 /** One block, one truck parked in the lane beside it, one crane. Shared by this view and its panel. */
 function createScene() {
@@ -23,7 +24,7 @@ function createScene() {
 let crane = createScene();
 /** Development aid: lets a browser console (or a test script) drive the crane directly. */
 const exposeForDebugging = () => {
-  if (import.meta.env.DEV) (window as unknown as { __porttrack: unknown }).__porttrack = { crane, bump: () => bump() };
+  if (import.meta.env.DEV) debugHandle().crane = { controller: crane, bump: () => bump() };
 };
 const store = createStore({
   version: 0,

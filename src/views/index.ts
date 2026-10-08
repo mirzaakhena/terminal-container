@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { YardView } from './YardView';
+import { YardPanel, YardView } from './YardView';
 import { ContainersView } from './ContainersView';
 import { TruckPanel, TruckView } from './TruckView';
 import { BlockPanel, BlockView } from './BlockView';
@@ -20,7 +20,7 @@ export interface ViewDef {
 }
 
 export const views: ViewDef[] = [
-  { id: 'yard', label: 'Yard', Component: YardView },
+  { id: 'yard', label: 'Yard', Component: YardView, Panel: YardPanel, homeDistance: 150, homeAzimuth: Math.PI / 2 },
   { id: 'containers', label: 'Containers', Component: ContainersView },
   { id: 'truck', label: 'Truck', Component: TruckView, Panel: TruckPanel },
   { id: 'block', label: 'Block', Component: BlockView, Panel: BlockPanel, homeDistance: 120 },

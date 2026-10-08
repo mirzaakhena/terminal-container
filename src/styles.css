@@ -275,3 +275,16 @@ kbd {
 .chip.primary:disabled { background: #9db0f3; }
 .badge { margin-left: 8px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #f1f3fa; color: var(--text-muted); }
 .badge.on { background: #e7f6ee; color: #146c3c; }
+
+.yard-panel { max-width: min(600px, calc(100% - 32px)); max-height: calc(100% - 110px); overflow-y: auto; }
+.address-label { min-width: 54px; }
+.job-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.job { padding: 8px 10px; border-radius: 10px; background: #f6f7fb; font-size: 13px; }
+.job > div:first-child { display: flex; align-items: center; gap: 6px; }
+.job .status { margin-left: auto; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #eceef6; color: var(--text-muted); text-transform: capitalize; }
+.job .status.running { background: var(--brand-soft); color: var(--brand); }
+.job .status.done { background: #e7f6ee; color: #146c3c; }
+.job .status.failed { background: #fff4e5; color: #8a4b00; }
+.job .step { color: var(--brand-dark); }
+.panel-head { display: flex; align-items: center; gap: 6px; }
+.panel-head .chip { margin-left: auto; padding: 4px 10px; font-size: 12px; }

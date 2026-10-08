@@ -34,3 +34,12 @@ npm run build && npm test
 - Colours and lighting live in `src/config/theme.ts`; everything is built from
   simple shapes in code, no external 3D files.
 - Work is tracked as tickets in `.kerjaan/`.
+
+## Development aids
+
+While running `npm run dev`, `window.__porttrack` in the browser console reaches the live simulations:
+
+- `__porttrack.yard.runner` — the yard's job runner (`jobs`, `crane`, `truck`, `add(...)`); `__porttrack.yard.bump()` redraws.
+- `__porttrack.crane.controller` — the crane in the Crane view (`moveTo`, `jog`, `lock`, `release`, `setSpreader`); `__porttrack.crane.bump()` redraws.
+
+It is not present in production builds.
