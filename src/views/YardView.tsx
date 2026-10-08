@@ -8,7 +8,7 @@ import { Block, blockLength, blockWidth, demoFill, formatAddress } from '../mode
 import { Tractor, Trailer, Truck } from '../models/truck';
 import { CraneController, LANE_WIDTH, RtgCrane, craneSpec } from '../models/crane';
 import { sampleRoute } from '../motion/route';
-import { JOB_STAGES, JobRunner, suggestDelivery, suggestReceiving, type Address, type Job } from '../sim/jobs';
+import { JOB_STAGES, JobRunner, suggestDelivery, suggestReceiving, type Address, type Job, type Pause } from '../sim/jobs';
 import type { World } from '../sim/world';
 import { RoadRibbon } from '../scene/RoadRibbon';
 import { Label } from '../scene/Label';
@@ -35,6 +35,7 @@ export const yardStore = createStore({
   time: 0,
   containers: Object.keys(yard.crane.world.block.containers).length,
   truckOnSite: null as null | { id: string; phase: string },
+  paused: null as Pause | null,
   message: null as null | { ok: boolean; text: string },
 });
 
@@ -119,6 +120,7 @@ export function YardView() {
         time: yard.time,
         containers: Object.keys(yard.crane.world.block.containers).length,
         truckOnSite: yard.truck ? { id: yard.truck.id, phase: yard.truck.phase } : null,
+        paused: yard.paused ? { ...yard.paused, refused: [...yard.paused.refused] } : null,
       });
     }
   });
@@ -172,7 +174,7 @@ const describeJob = (j: Job) =>
   j.moves.map((m) => `${CONTAINER_SPECS[m.type].nominalFeet}ft ${j.kind === 'delivery' ? 'from' : 'to'} ${formatAddress(m.address)}`).join(' + ');
 
 export function YardPanel() {
-  const { jobs, speed, message } = yardStore.use();
+  const { jobs, speed, message, paused } = yardStore.use();
   const [kind, setKind] = useState<'delivery' | 'receiving'>('delivery');
   const [sizeId, setSizeId] = useState('1x20');
   const size = SIZES.find((s) => s.id === sizeId)!;
@@ -210,6 +212,19 @@ export function YardPanel() {
   };
 
   const visible = jobs.slice(-4).reverse();
+  const resume = () => {
+    const r = yard.resume();
+    say(r.ok, r.ok ? 'Queue resumed.' : r.reason);
+  };
+  const pauseBanner = paused && (
+    <div className="notice pause" role="alert">
+      <strong>Queue paused.</strong> {paused.jobId} stopped: {paused.reason}
+      {paused.recovering ? ' Putting things right…' : paused.refused.length ? ` Re-checked the queue: ${paused.refused.join(', ')} can no longer be done.` : ' Re-checked the queue: the remaining jobs can still be done.'}
+      <div className="row-wrap">
+        <button className="chip primary" disabled={paused.recovering} onClick={resume}>Resume queue</button>
+      </div>
+    </div>
+  );
   return (
     <div className="view-panel card yard-panel">
       <div className="panel-title panel-head">
@@ -218,6 +233,7 @@ export function YardPanel() {
           {collapsed ? 'Show' : 'Hide'}
         </button>
       </div>
+      {pauseBanner}
       {collapsed ? (
         (() => {
           const j = jobs.find((x) => x.status === 'running') ?? visible[0];
@@ -275,11 +291,11 @@ export function YardPanel() {
             <li key={j.id} className={`job ${j.status}`}>
               <div>
                 <strong>{j.id}</strong> <span className="muted">{j.kind} · {j.truckId}</span>
-                <span className={`status ${j.status}`}>{j.status === 'running' ? JOB_STAGES[j.stage] : j.status}</span>
+                <span className={`status ${j.status}`}>{j.status === 'running' ? JOB_STAGES[j.stage] : j.status === 'failed' ? 'stopped' : j.status}</span>
               </div>
               <div className="hint">{describeJob(j)}</div>
               {j.status === 'running' && <div className="hint step">{j.step}</div>}
-              {j.status === 'failed' && <div className="hint">{j.error}</div>}
+              {(j.status === 'failed' || j.status === 'refused') && <div className="hint">{j.error}</div>}
             </li>
           ))}
         </ul>

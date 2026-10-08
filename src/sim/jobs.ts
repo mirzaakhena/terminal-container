@@ -8,7 +8,7 @@ import { TRAILER } from '../models/truck/spec';
 import { CraneController, LANE_Z } from '../models/crane';
 import { createRoute, type Route } from '../motion/route';
 import { TruckMotion } from '../motion/truckMotion';
-import { floorUnder, solids, type ParkedTruck } from './world';
+import { containerUnder, floorUnder, solids, type ParkedTruck } from './world';
 
 /**
  * Crane jobs between the block and trucks in the lane.
@@ -24,7 +24,8 @@ export type JobRequest =
   | { kind: 'delivery'; from: Address[]; types?: ContainerType[] }
   | { kind: 'receiving'; types: ContainerType[]; to: Address[] };
 
-export type JobStatus = 'queued' | 'running' | 'done' | 'failed';
+/** `failed`: stopped partway; `refused`: dropped from the queue because the yard changed under it. */
+export type JobStatus = 'queued' | 'running' | 'done' | 'failed' | 'refused';
 
 export interface JobMove {
   id: string;
@@ -153,10 +154,21 @@ function slotOrder(load: TrailerLoad): SlotId[] {
 type CraneOp =
   | { op: 'raise' }
   | { op: 'spreader'; feet: 20 | 40 }
-  | { op: 'move'; x: number; z: number }
+  /** `check`: before going, confirm the container (or free slot) is still where the plan expects. */
+  | { op: 'move'; x: number; z: number; check?: { move: JobMove; what: 'pick' | 'drop' } }
   | { op: 'lower' }
-  | { op: 'lock' }
-  | { op: 'release' };
+  | { op: 'lock'; move?: JobMove }
+  | { op: 'release'; move?: JobMove };
+
+/** Why the queue is not running jobs: which job stopped, and what happened. */
+export interface Pause {
+  jobId: string;
+  reason: string;
+  /** Still putting things right (returning a held container, sending the truck off). */
+  recovering: boolean;
+  /** Queued jobs that could no longer work once the yard was looked at again. */
+  refused: string[];
+}
 
 export interface ActiveTruck {
   id: string;
@@ -180,8 +192,11 @@ export class JobRunner {
   truck: ActiveTruck | null = null;
   route: Route;
   time = 0;
+  /** Set while the queue is stopped after a job failed; cleared by resume(). */
+  paused: Pause | null = null;
   private ops: CraneOp[] = [];
   private opStarted = false;
+  private recovery: Job | null = null;
 
   constructor(public crane: CraneController, blockLength: number) {
     this.planned = crane.world.block;
@@ -193,7 +208,16 @@ export class JobRunner {
   }
 
   get busy() {
-    return this.jobs.some((j) => j.status === 'running' || j.status === 'queued');
+    return !this.paused && this.jobs.some((j) => j.status === 'running' || j.status === 'queued');
+  }
+
+  /** Carries on with the queue after a stop, once recovery has finished. */
+  resume(): { ok: true } | Refusal {
+    if (!this.paused) return { ok: false, reason: 'The queue is not paused.' };
+    if (this.paused.recovering) return { ok: false, reason: 'Still recovering from the stopped job.' };
+    if (this.crane.carried) return { ok: false, reason: `The crane is still holding ${this.crane.carried.id}.` };
+    this.paused = null;
+    return { ok: true };
   }
 
   /** Adds a job to the queue, or explains why it cannot be done. */
@@ -224,6 +248,12 @@ export class JobRunner {
     this.crane.step(dt);
     if (this.truck && this.truck.phase !== 'parked') this.truck.motion.step(dt);
 
+    if (this.recovery) {
+      this.recover(this.recovery);
+      return;
+    }
+    if (this.paused) return;
+
     let job = this.current;
     if (!job) {
       job = this.jobs.find((j) => j.status === 'queued');
@@ -233,11 +263,97 @@ export class JobRunner {
     try {
       this.advance(job);
     } catch (e) {
-      job.status = 'failed';
-      job.error = (e as Error).message;
-      job.step = `Stopped: ${job.error}`;
-      this.ops = [];
+      this.fail(job, (e as Error).message);
     }
+  }
+
+  // ─── When a job cannot finish ─────────────────────────────────────────────────────────────────
+
+  /** Stops the queue, then puts things right: return what the crane holds, send the truck off, re-check the queue. */
+  private fail(job: Job, reason: string) {
+    job.status = 'failed';
+    job.error = reason;
+    job.finishedAt = this.time;
+    this.paused = { jobId: job.id, reason, recovering: true, refused: [] };
+    this.recovery = job;
+    this.ops = this.putBackOps(job);
+    this.opStarted = false;
+    job.step = this.ops.length ? `Stopped: ${reason} Putting ${this.crane.carried?.id} back.` : `Stopped: ${reason}`;
+  }
+
+  /** Crane moves that return a held container to where the stopped job took it from. */
+  private putBackOps(job: Job): CraneOp[] {
+    const c = this.crane;
+    const held = c.carried;
+    if (!held) return [{ op: 'raise' }];
+    const m = job.moves.find((x) => x.id === held.id);
+    const truck = this.crane.world.trucks.find((x) => x.id === job.truckId);
+    if (m && job.kind === 'delivery' && canPlaceInBlock(c.world.block, m.type, m.address).ok) {
+      const [x, , z] = slotPosition(c.world.block, m.type, { ...m.address, tier: 1 });
+      return [{ op: 'raise' }, { op: 'move', x, z }, { op: 'lower' }, { op: 'release' }, { op: 'raise' }];
+    }
+    if (m && truck && !truck.load[m.slot]) {
+      return [{ op: 'raise' }, { op: 'move', x: truck.x + SLOTS[m.slot].centreX, z: truck.z }, { op: 'lower' }, { op: 'release' }, { op: 'raise' }];
+    }
+    return [{ op: 'raise' }];
+  }
+
+  private recover(job: Job) {
+    const pause = this.paused!;
+    const t = this.truck;
+    if (this.ops.length) {
+      try {
+        if (this.runOps(job)) return;
+      } catch (e) {
+        // Could not put it back either: keep holding it, in plain sight, and say so.
+        this.ops = [];
+        pause.reason += ` The crane is still holding ${this.crane.carried?.id ?? 'a container'}: ${(e as Error).message}`;
+      }
+      if (this.crane.carried) pause.reason += ` The crane is still holding ${this.crane.carried.id}.`;
+    }
+    // Send the truck away with whatever is on it now.
+    if (t && t.phase === 'parked') {
+      // The truck may have been moved out of the world by hand; then it leaves with what it had.
+      const parked = this.crane.world.trucks.find((x) => x.id === t.id);
+      if (parked) {
+        t.load = parked.load;
+        t.ids = parked.ids;
+        t.colors = parked.colors as ActiveTruck['colors'];
+      }
+      this.crane.world = { ...this.crane.world, trucks: [] };
+      t.phase = 'leaving';
+      t.motion.driveTo('Exit');
+    } else if (t && t.phase === 'arriving') {
+      t.motion.driveTo('Exit');
+      t.phase = 'leaving';
+    }
+    if (this.truck) {
+      job.step = `Stopped: ${job.error} ${this.truck.id} is being sent away.`;
+      if (this.truck.motion.moving) return;
+      this.truck = null;
+    }
+    job.step = `Stopped: ${job.error}`;
+    pause.refused = this.replan();
+    pause.recovering = false;
+    this.recovery = null;
+  }
+
+  /** Checks every queued job again against the block as it really is; drops those that can no longer work. */
+  private replan(): string[] {
+    let planned = this.crane.world.block;
+    const refused: string[] = [];
+    for (const j of this.jobs.filter((x) => x.status === 'queued')) {
+      const r = recheckJob(planned, j);
+      if (r.ok) planned = r.after;
+      else {
+        j.status = 'refused';
+        j.error = r.reason;
+        j.step = `Refused: ${r.reason}`;
+        refused.push(j.id);
+      }
+    }
+    this.planned = planned;
+    return refused;
   }
 
   private start(job: Job) {
@@ -315,9 +431,11 @@ export class JobRunner {
         return { x, z };
       })();
       const [from, to] = job.kind === 'delivery' ? [blockXZ, truckXZ] : [truckXZ, blockXZ];
+      const pickCheck = job.kind === 'delivery' ? { move: m, what: 'pick' as const } : undefined;
+      const dropCheck = job.kind === 'receiving' ? { move: m, what: 'drop' as const } : undefined;
       ops.push(
-        { op: 'raise' }, { op: 'spreader', feet }, { op: 'move', ...from }, { op: 'lower' }, { op: 'lock' },
-        { op: 'raise' }, { op: 'move', ...to }, { op: 'lower' }, { op: 'release' },
+        { op: 'raise' }, { op: 'spreader', feet }, { op: 'move', ...from, check: pickCheck }, { op: 'lower' }, { op: 'lock', move: m },
+        { op: 'raise' }, { op: 'move', ...to, check: dropCheck }, { op: 'lower' }, { op: 'release', move: dropCheck ? m : undefined },
       );
     }
     ops.push({ op: 'raise' });
@@ -351,6 +469,7 @@ export class JobRunner {
             break;
           }
           case 'move':
+            if (op.check) this.confirm(op.check.move, op.check.what);
             job.step = c.carried ? `Carrying ${box}` : `Moving to ${box}`;
             c.moveTo('gantry', op.x);
             c.moveTo('trolley', op.z);
@@ -360,12 +479,17 @@ export class JobRunner {
             c.moveTo('hoist', 0);
             break;
           case 'lock': {
+            if (op.move) {
+              const hit = containerUnder(c.world, c.gantry.pos, c.trolley.pos, c.hoist.pos);
+              if (hit && hit.id !== op.move.id) throw new Error(`Expected ${op.move.id} under the spreader but found ${hit.id}.`);
+            }
             const r = c.lock();
             if (!r.ok) throw new Error(r.reason);
             job.step = `Locked on ${box}`;
             break;
           }
           case 'release': {
+            if (op.move) this.confirm(op.move, 'drop');
             const r = c.release();
             if (!r.ok) throw new Error(r.reason);
             job.step = `Released ${box}`;
@@ -381,10 +505,51 @@ export class JobRunner {
     return false;
   }
 
+  /** Throws if the yard no longer matches the plan for this move. */
+  private confirm(m: JobMove, what: 'pick' | 'drop') {
+    const block = this.crane.world.block;
+    const where = formatAddress(m.address);
+    if (what === 'pick') {
+      const c = block.containers[m.id];
+      if (!c || c.bay !== m.address.bay || c.row !== m.address.row || c.tier !== m.address.tier) {
+        throw new Error(`${m.id} is no longer at ${where}.`);
+      }
+      const above = containersOnTop(block, m.id);
+      if (above.length) throw new Error(`${m.id} at ${where} now has ${above.map((a) => a.id).join(', ')} on top.`);
+      return;
+    }
+    const ok = canPlaceInBlock(block, m.type, m.address);
+    if (!ok.ok) throw new Error(`Cannot put ${m.id} down: ${ok.reason.includes(where) ? ok.reason : `${where}: ${ok.reason}`}`);
+  }
+
   private isDone(job: Job, m: JobMove): boolean {
     const inBlock = !!this.crane.world.block.containers[m.id];
     return job.kind === 'delivery' ? !inBlock : inBlock;
   }
+}
+
+/** Checks a queued job against a block, keeping its containers' numbers. Returns the block after it. */
+function recheckJob(block: BlockState, job: Job): { ok: true; after: BlockState } | Refusal {
+  let b = block;
+  for (const m of job.moves) {
+    const where = formatAddress(m.address);
+    if (job.kind === 'delivery') {
+      const c = b.containers[m.id];
+      if (!c || c.bay !== m.address.bay || c.row !== m.address.row || c.tier !== m.address.tier) {
+        return { ok: false, reason: `${m.id} is no longer at ${where}.` };
+      }
+      const above = containersOnTop(b, m.id);
+      if (above.length) return { ok: false, reason: `${m.id} at ${where} is now under ${above.map((a) => a.id).join(', ')}.` };
+      const r = remove(b, m.id);
+      if (!r.ok) return r;
+      b = r.value;
+    } else {
+      const r = place(b, { id: m.id, type: m.type, color: m.color, ...m.address });
+      if (!r.ok) return { ok: false, reason: r.reason.includes(where) ? r.reason : `${where}: ${r.reason}` };
+      b = r.value;
+    }
+  }
+  return { ok: true, after: b };
 }
 
 /** For checks: the lowest point of whatever hangs from the crane, and the floor under it. */

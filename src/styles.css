@@ -392,3 +392,6 @@ kbd {
 .view-tabs { flex-wrap: nowrap; }
 @media (max-width: 1500px) { .user-text, .site-text > span { display: none; } .view-tabs button { padding: 8px 10px; } }
 @media (max-width: 1250px) { .site-picker, .icon-button { display: none; } }
+.notice.pause { background: #fff4e5; color: #8a4b00; padding-right: 12px; display: flex; flex-direction: column; gap: 8px; }
+.job .status.refused { background: #fff4e5; color: #8a4b00; }
+.notice.pause button { position: static; font-size: 13px; }

@@ -16,7 +16,7 @@ const SAMPLE: Job = {
 /** Bottom strip: the current job's progress through its stages, like the reference's shipment tracking. */
 export function JobTimeline() {
   const { jobs } = yardStore.use();
-  const job = jobs.find((j) => j.status === 'running') ?? [...jobs].reverse().find((j) => j.status === 'done') ?? jobs.find((j) => j.status === 'queued') ?? SAMPLE;
+  const job = jobs.find((j) => j.status === 'running') ?? [...jobs].reverse().find((j) => j.status === 'done' || j.status === 'failed') ?? jobs.find((j) => j.status === 'queued') ?? SAMPLE;
   const times = stageTimesOf(job.id);
   const sample = job === SAMPLE;
   return (
@@ -46,7 +46,7 @@ export function JobTimeline() {
             {job.kind === 'delivery' ? 'From' : 'To'} {job.moves.map((m) => formatAddress(m.address)).join(', ')} ·{' '}
             {job.moves.map((m) => `${CONTAINER_SPECS[m.type].nominalFeet}ft`).join(' + ')}
           </div>
-          <span className={`pill ${job.status === 'running' ? 'blue' : job.status === 'done' ? 'green' : ''}`}>{sample ? 'Sample' : job.status === 'running' ? JOB_STAGES[job.stage] : job.status}</span>
+          <span className={`pill ${job.status === 'running' ? 'blue' : job.status === 'done' ? 'green' : job.status === 'failed' || job.status === 'refused' ? 'amber' : ''}`}>{sample ? 'Sample' : job.status === 'running' ? JOB_STAGES[job.stage] : job.status === 'failed' ? 'stopped' : job.status}</span>
           <div className="hint">{job.step}</div>
         </div>
       </div>

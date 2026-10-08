@@ -7,6 +7,7 @@ import { movesDone } from './yardStats';
 const truckStatus = (j: Job): { text: string; tone: string } => {
   if (j.status === 'queued') return { text: 'At gate', tone: '' };
   if (j.status === 'failed') return { text: 'Stopped', tone: 'amber' };
+  if (j.status === 'refused') return { text: 'Refused', tone: 'amber' };
   if (j.status === 'done') return { text: 'Left', tone: 'green' };
   return [
     { text: 'Waiting', tone: '' },
