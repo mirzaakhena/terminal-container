@@ -131,3 +131,62 @@ button {
 }
 .scene-tag strong { font-weight: 600; color: var(--text); }
 .scene-tag span { color: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+
+.view-panel {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  max-width: min(520px, calc(100% - 32px));
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.panel-title { font-weight: 600; font-size: 14px; }
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  background: #f1f3fa;
+  border-radius: 10px;
+}
+.segmented button {
+  border: 0;
+  background: transparent;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.segmented button.active { background: var(--card); color: var(--brand); font-weight: 600; box-shadow: 0 1px 3px rgba(40, 50, 100, 0.12); }
+.link-button {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: underline;
+}
+.notice {
+  position: relative;
+  padding: 10px 32px 10px 12px;
+  border-radius: 10px;
+  background: #fff4e5;
+  color: #8a4b00;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.notice button {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  border: 0;
+  background: none;
+  font-size: 16px;
+  color: inherit;
+}
+
+.header, .camera-controls, .view-panel { z-index: 100; }

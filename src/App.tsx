@@ -26,6 +26,7 @@ export function App() {
         <view.Component key={view.id} />
       </Stage>
       <Header viewId={view.id} onViewChange={changeView} />
+      {view.Panel && <view.Panel />}
       <CameraControls api={cameraApi} showGrid={showGrid} onToggleGrid={() => setShowGrid((s) => !s)} />
     </div>
   );
