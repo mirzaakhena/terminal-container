@@ -5,7 +5,6 @@ import { CameraControls } from './ui/CameraControls';
 import { Header } from './ui/Header';
 import { findView } from './views';
 
-
 const initialView = () => findView(new URLSearchParams(location.search).get('view')).id;
 
 export function App() {

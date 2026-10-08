@@ -3,6 +3,7 @@ import { YardView } from './YardView';
 import { ContainersView } from './ContainersView';
 import { TruckPanel, TruckView } from './TruckView';
 import { BlockPanel, BlockView } from './BlockView';
+import { DrivePanel, DriveView } from './DriveView';
 
 /** Each view is a set of objects drawn on the shared stage, picked from the header. */
 export interface ViewDef {
@@ -20,6 +21,7 @@ export const views: ViewDef[] = [
   { id: 'containers', label: 'Containers', Component: ContainersView },
   { id: 'truck', label: 'Truck', Component: TruckView, Panel: TruckPanel },
   { id: 'block', label: 'Block', Component: BlockView, Panel: BlockPanel, homeDistance: 120 },
+  { id: 'drive', label: 'Drive', Component: DriveView, Panel: DrivePanel, homeDistance: 150 },
 ];
 
 export const findView = (id: string | null): ViewDef => views.find((v) => v.id === id) ?? views[0];
