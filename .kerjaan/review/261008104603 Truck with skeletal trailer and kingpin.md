@@ -42,6 +42,7 @@ sitting exactly on its twistlocks.
 - 2026-10-08 10:46:26 backlog
 - 2026-10-08 10:57:35 todo
 - 2026-10-08 11:14:40 in_progress
+- 2026-10-08 11:18:11 review
 
 ## Notes
 - 2026-10-08 11:18:10: test run — `npm run build && npm test` exited 0 after 0m10s, on content fingerprint e90bcab0b8880ec3b90612e793473af011bc2a54 (the same before and after the run; .kerjaan/ left out).
