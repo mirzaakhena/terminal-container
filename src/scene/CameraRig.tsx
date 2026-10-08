@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { Vector3 } from 'three';
-import { dolly, orbitY, HOME_POSITION, HOME_TARGET, MIN_DISTANCE, MAX_DISTANCE, type Vec3 } from './cameraMath';
+import { dolly, orbitY, homePosition, HOME_TARGET, MIN_DISTANCE, MAX_DISTANCE, type Vec3 } from './cameraMath';
 import type { CameraApiRef } from './cameraApi';
 
 interface Tween {
@@ -17,10 +17,11 @@ interface Tween {
 const DURATION = 0.45; // seconds
 const ease = (t: number) => 1 - Math.pow(1 - t, 3);
 
-export function CameraRig({ api }: { api: CameraApiRef }) {
+export function CameraRig({ api, homeDistance }: { api: CameraApiRef; homeDistance?: number }) {
   const controls = useRef<OrbitControlsImpl>(null);
   const tween = useRef<Tween | null>(null);
   const camera = useThree((s) => s.camera);
+  const homeRef = useRef(homeDistance);
 
   useEffect(() => {
     const go = (pos: Vec3, target: Vec3) => {
@@ -50,7 +51,7 @@ export function CameraRig({ api }: { api: CameraApiRef }) {
         const [p, t] = current();
         go(orbitY(p, t, angle), t);
       },
-      home: () => go(HOME_POSITION, HOME_TARGET),
+      home: () => go(homePosition(homeRef.current), HOME_TARGET),
       focus: (target, distance = 60) => {
         const [p, t] = current();
         const offset: Vec3 = [p[0] - t[0], p[1] - t[1], p[2] - t[2]];
@@ -63,6 +64,19 @@ export function CameraRig({ api }: { api: CameraApiRef }) {
       api.current = null;
     };
   }, [api, camera]);
+
+  // A view with its own framing: jump there on first mount, glide there when the view changes.
+  const first = useRef(true);
+  useEffect(() => {
+    homeRef.current = homeDistance;
+    if (first.current) {
+      first.current = false;
+      camera.position.set(...homePosition(homeDistance));
+      controls.current?.update();
+      return;
+    }
+    api.current?.home();
+  }, [homeDistance, api, camera]);
 
   useFrame((_, dt) => {
     const tw = tween.current;

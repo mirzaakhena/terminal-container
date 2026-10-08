@@ -190,3 +190,42 @@ button {
 }
 
 .header, .camera-controls, .view-panel { z-index: 100; }
+
+.muted { color: var(--text-muted); font-weight: 500; }
+.panel-subtitle { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.row-wrap { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  background: #f1f3fa;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.stepper span { color: var(--text-muted); }
+.stepper output { min-width: 20px; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stepper button, .chip {
+  border: 0;
+  border-radius: 8px;
+  background: var(--card);
+  box-shadow: 0 1px 2px rgba(40, 50, 100, 0.12);
+  font-size: 13px;
+  font-weight: 500;
+}
+.stepper button { width: 26px; height: 26px; }
+.stepper button:disabled { opacity: 0.4; cursor: default; }
+.chip { padding: 7px 12px; background: #f1f3fa; box-shadow: none; }
+.chip.primary { background: var(--brand); color: #fff; }
+.view-panel select, .view-panel input {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 8px;
+  border: 1px solid #dde1ee;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+}
+.view-panel input[type='number'] { width: 58px; }
+.hint { font-size: 12px; color: var(--text-muted); }
+.notice.success { background: #e7f6ee; color: #146c3c; }

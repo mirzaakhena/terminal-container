@@ -5,6 +5,7 @@ import { CameraControls } from './ui/CameraControls';
 import { Header } from './ui/Header';
 import { findView } from './views';
 
+
 const initialView = () => findView(new URLSearchParams(location.search).get('view')).id;
 
 export function App() {
@@ -22,7 +23,7 @@ export function App() {
 
   return (
     <div className="app">
-      <Stage cameraApi={cameraApi} showGrid={showGrid}>
+      <Stage cameraApi={cameraApi} showGrid={showGrid} homeDistance={view.homeDistance}>
         <view.Component key={view.id} />
       </Stage>
       <Header viewId={view.id} onViewChange={changeView} />

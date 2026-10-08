@@ -34,3 +34,14 @@ describe('camera math', () => {
     p.forEach((v, i) => expect(v).toBeCloseTo(HOME_POSITION[i], 6));
   });
 });
+
+import { homePosition } from './cameraMath';
+
+describe('home position', () => {
+  it('scales the home view to the requested distance, same direction', () => {
+    const p = homePosition(120);
+    expect(length(p)).toBeCloseTo(120, 6);
+    expect(p[0] / p[1]).toBeCloseTo(HOME_POSITION[0] / HOME_POSITION[1], 6);
+    expect(homePosition()).toBe(HOME_POSITION);
+  });
+});

@@ -12,11 +12,13 @@ import { ScaleRuler } from './ScaleRuler';
 interface StageProps {
   cameraApi: CameraApiRef;
   showGrid: boolean;
+  /** Home-view distance for the current view; the camera moves there when it changes. */
+  homeDistance?: number;
   children?: ReactNode;
 }
 
 /** The 3D world every view is drawn into: camera, lights, ground and scale aids. */
-export function Stage({ cameraApi, showGrid, children }: StageProps) {
+export function Stage({ cameraApi, showGrid, homeDistance, children }: StageProps) {
   return (
     <Canvas
       shadows={{ type: PCFSoftShadowMap }}
@@ -29,7 +31,7 @@ export function Stage({ cameraApi, showGrid, children }: StageProps) {
       <Lights />
       <Ground showGrid={showGrid} />
       {showGrid && <ScaleRuler position={[-5, 0, 26]} />}
-      <CameraRig api={cameraApi} />
+      <CameraRig api={cameraApi} homeDistance={homeDistance} />
       {children}
     </Canvas>
   );

@@ -4,6 +4,13 @@ export type Vec3 = [number, number, number];
 export const HOME_TARGET: Vec3 = [0, 0, 0];
 export const HOME_POSITION: Vec3 = [44, 39, 44];
 
+/** The home view at a given distance from the target, same direction as HOME_POSITION. */
+export function homePosition(distance?: number): Vec3 {
+  if (distance === undefined) return HOME_POSITION;
+  const k = distance / length(HOME_POSITION);
+  return [HOME_POSITION[0] * k, HOME_POSITION[1] * k, HOME_POSITION[2] * k];
+}
+
 export const MIN_DISTANCE = 12;
 export const MAX_DISTANCE = 420;
 
