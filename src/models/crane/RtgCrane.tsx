@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group, Mesh } from 'three';
 import { CONTAINER_SPECS, Container } from '../container';
@@ -6,15 +6,9 @@ import { materials } from '../materials';
 import { Slab } from '../parts';
 import type { CraneController } from './controller';
 import { SPREADER } from './spec';
+import { FRAME, frameParts, trolleyParts } from './frame';
 
-const LEG = 0.9;
-const GIRDER_H = 1.3;
-const SILL_Y = 0.75;
-const WHEEL_R = 0.62;
-const TROLLEY = { x: 4.6, z: 3.4, h: 1.5 };
-const GIRDER_X = 1.9;
-const ROPE_DX = 0.9;
-const ROPE_DZ = 0.8;
+const { ropeDx: ROPE_DX, ropeDz: ROPE_DZ, girderH: GIRDER_H } = FRAME;
 
 /**
  * Rubber-tyred gantry crane. Reads its pose from the controller every frame, so the scene does not
@@ -25,6 +19,8 @@ export function RtgCrane({ crane }: { crane: CraneController }) {
   const [z0, z1] = spec.legZ;
   const top = spec.girderY;
   const hw = spec.wheelbase / 2;
+  const staticParts = useMemo(() => frameParts(spec), [spec]);
+  const movingParts = useMemo(() => trolleyParts(spec), [spec]);
 
   const gantry = useRef<Group>(null);
   const trolley = useRef<Group>(null);
@@ -65,55 +61,25 @@ export function RtgCrane({ crane }: { crane: CraneController }) {
 
   return (
     <group ref={gantry}>
-      {/* Two side frames: sill beam with wheel bogies, two legs, portal beam on top */}
-      {[z0, z1].map((z) => (
-        <group key={z}>
-          <Slab from={[-hw - 1.2, SILL_Y, z - 0.55]} to={[hw + 1.2, SILL_Y + 0.9, z + 0.55]} material={materials.white} />
-          {[-hw, hw].map((x) => (
-            <group key={x}>
-              <Slab from={[x - LEG / 2, SILL_Y + 0.9, z - LEG / 2]} to={[x + LEG / 2, top + GIRDER_H, z + LEG / 2]} material={materials.white} />
-              {[-0.75, 0.75].map((dx) => (
-                <mesh key={dx} position={[x + dx, WHEEL_R, z]} rotation-x={Math.PI / 2} material={materials.rubber} castShadow>
-                  <cylinderGeometry args={[WHEEL_R, WHEEL_R, 0.55, 18]} />
-                </mesh>
-              ))}
-              <Slab from={[x - 1.3, WHEEL_R + 0.1, z - 0.4]} to={[x + 1.3, SILL_Y + 0.05, z + 0.4]} material={materials.frame} />
-            </group>
-          ))}
-          <Slab from={[-hw - 0.6, top, z - 0.6]} to={[hw + 0.6, top + GIRDER_H, z + 0.6]} material={materials.brand} />
-          {/* Mid-height tie between the legs */}
-          <Slab from={[-hw, top * 0.45, z - 0.3]} to={[hw, top * 0.45 + 0.5, z + 0.3]} material={materials.white} />
-          {/* Warning stripes at the leg feet */}
-          {[-hw, hw].map((x) => (
-            <Slab key={x} from={[x - LEG / 2 - 0.01, SILL_Y + 0.9, z - LEG / 2 - 0.01]} to={[x + LEG / 2 + 0.01, SILL_Y + 1.5, z + LEG / 2 + 0.01]} material={materials.amber} />
-          ))}
-        </group>
+      {staticParts.map((b, i) => (
+        <Slab key={i} from={b.from} to={b.to} material={materials[b.material]} shadow={b.material !== 'glass'} />
       ))}
-
-      {/* Main girders across the block, carrying the trolley */}
-      {[-GIRDER_X, GIRDER_X].map((x) => (
-        <Slab key={x} from={[x - 0.35, top, z0 - 0.6]} to={[x + 0.35, top + GIRDER_H, z1 + 0.6]} material={materials.brand} />
-      ))}
-      {/* Rails on the girders */}
-      {[-GIRDER_X, GIRDER_X].map((x) => (
-        <Slab key={x} from={[x - 0.08, top + GIRDER_H, z0 - 0.4]} to={[x + 0.08, top + GIRDER_H + 0.08, z1 + 0.4]} material={materials.steelDark} />
-      ))}
-
-      {/* Power house on the far sill */}
-      <Slab from={[-2.2, SILL_Y + 0.9, z1 - 0.5]} to={[1.8, SILL_Y + 3.0, z1 + 0.55]} material={materials.white} />
-      <Slab from={[-2.0, SILL_Y + 1.4, z1 + 0.55]} to={[1.6, SILL_Y + 2.6, z1 + 0.57]} material={materials.steelDark} />
+      {/* Wheels: two per leg, rolling along the block */}
+      {[z0, z1].flatMap((z) =>
+        [-hw, hw].flatMap((x) =>
+          [-0.75, 0.75].map((dx) => (
+            <mesh key={`${z},${x},${dx}`} position={[x + dx, FRAME.wheelR, z]} rotation-x={Math.PI / 2} material={materials.rubber} castShadow>
+              <cylinderGeometry args={[FRAME.wheelR, FRAME.wheelR, 0.55, 18]} />
+            </mesh>
+          )),
+        ),
+      )}
 
       {/* Trolley, its cab and everything hanging from it */}
       <group ref={trolley}>
-        <Slab from={[-TROLLEY.x / 2, top + GIRDER_H + 0.08, -TROLLEY.z / 2]} to={[TROLLEY.x / 2, top + GIRDER_H + 0.08 + TROLLEY.h, TROLLEY.z / 2]} material={materials.white} />
-        <Slab from={[-TROLLEY.x / 2 - 0.01, top + GIRDER_H + 0.5, -TROLLEY.z / 2 - 0.01]} to={[TROLLEY.x / 2 + 0.01, top + GIRDER_H + 0.75, TROLLEY.z / 2 + 0.01]} material={materials.brand} />
-        {/* Operator cab hangs on the lane side so the driver looks down onto trucks */}
-        <group position={[GIRDER_X + 0.4, top - 1.0, -1.1]}>
-          <Slab from={[0, -1.2, -0.9]} to={[1.9, 1.0, 0.9]} material={materials.white} />
-          <Slab from={[0.2, -1.0, -0.91]} to={[1.7, 0.6, -0.89]} material={materials.glass} shadow={false} />
-          <Slab from={[1.89, -1.0, -0.7]} to={[1.91, 0.6, 0.7]} material={materials.glass} shadow={false} />
-          <Slab from={[0.2, -1.21, -0.7]} to={[1.7, -1.19, 0.7]} material={materials.glass} shadow={false} />
-        </group>
+        {movingParts.map((b, i) => (
+          <Slab key={i} from={b.from} to={b.to} material={materials[b.material]} shadow={b.material !== 'glass'} />
+        ))}
 
         <group ref={ropes}>
           {[-ROPE_DX, ROPE_DX].flatMap((x) =>
