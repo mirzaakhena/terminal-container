@@ -28,7 +28,7 @@ export function Stage({ cameraApi, showGrid, children }: StageProps) {
       <fog attach="fog" args={[palette.background, 260, 620]} />
       <Lights />
       <Ground showGrid={showGrid} />
-      {showGrid && <ScaleRuler position={[-5, 0, 12]} />}
+      {showGrid && <ScaleRuler position={[-5, 0, 26]} />}
       <CameraRig api={cameraApi} />
       {children}
     </Canvas>

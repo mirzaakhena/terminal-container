@@ -114,3 +114,20 @@ button {
   .brand { font-size: 18px; }
   .camera-controls { top: auto; bottom: 16px; transform: none; }
 }
+
+.scene-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(40, 50, 100, 0.14);
+  white-space: nowrap;
+  pointer-events: none;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.scene-tag strong { font-weight: 600; color: var(--text); }
+.scene-tag span { color: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
