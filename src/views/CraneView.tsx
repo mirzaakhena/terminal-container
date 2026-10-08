@@ -127,13 +127,28 @@ function describeLocation(): string {
   return `${along} · ${across}`;
 }
 
+/** Movements currently held down, by button or key; each is stopped and lined up exactly once. */
+const held = new Set<AxisName>();
+function startJog(axis: AxisName, dir: -1 | 1) {
+  held.add(axis);
+  crane.jog(axis, dir);
+}
+function endJog(axis: AxisName) {
+  if (!held.delete(axis)) return;
+  crane.stopAndAlign(axis);
+}
+/** Letting go of everything at once — for when the window stops receiving input mid-movement. */
+function endAllJogs() {
+  for (const axis of [...held]) endJog(axis);
+}
+
 /** Hold-to-move: start on press, stop (and finish lining up) on release, also if the pointer slides off. */
 function JogButton({ axis, dir, label, disabled }: { axis: AxisName; dir: -1 | 1; label: string; disabled: boolean }) {
   const start = (e: React.PointerEvent) => {
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    crane.jog(axis, dir);
+    startJog(axis, dir);
   };
-  const end = () => crane.stopAndAlign(axis);
+  const end = () => endJog(axis);
   return (
     <button className="jog" disabled={disabled} onPointerDown={start} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}>
       {label}
@@ -143,7 +158,7 @@ function JogButton({ axis, dir, label, disabled }: { axis: AxisName; dir: -1 | 1
 
 function useKeyboard() {
   useEffect(() => {
-    const held = new Set<string>();
+    const keys = new Map<string, AxisName>();
     const typing = (e: KeyboardEvent) => e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement;
     const down = (e: KeyboardEvent) => {
       if (typing(e) || e.repeat) return;
@@ -151,8 +166,8 @@ function useKeyboard() {
       const m = KEYMAP[k];
       if (m) {
         e.preventDefault();
-        held.add(k);
-        crane.jog(m[0], m[1]);
+        keys.set(k, m[0]);
+        startJog(m[0], m[1]);
       } else if (k === '2') report(crane.setSpreader(20), 'Spreader set to 20ft.');
       else if (k === '4') report(crane.setSpreader(40), 'Spreader set to 40ft.');
       else if (k === 'l') report(crane.lock(), 'Locked on.');
@@ -160,14 +175,29 @@ function useKeyboard() {
     };
     const up = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
-      if (!held.delete(k)) return;
-      crane.stopAndAlign(KEYMAP[k][0]);
+      const axis = keys.get(k);
+      if (!axis) return;
+      keys.delete(k);
+      endJog(axis);
+    };
+    // Switching to another window or tab means key-ups and pointer-ups may never arrive.
+    const letGo = () => {
+      keys.clear();
+      endAllJogs();
+    };
+    const hidden = () => {
+      if (document.visibilityState === 'hidden') letGo();
     };
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
+    window.addEventListener('blur', letGo);
+    document.addEventListener('visibilitychange', hidden);
     return () => {
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
+      window.removeEventListener('blur', letGo);
+      document.removeEventListener('visibilitychange', hidden);
+      letGo();
     };
   }, []);
 }
