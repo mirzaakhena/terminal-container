@@ -17,11 +17,11 @@ interface Tween {
 const DURATION = 0.45; // seconds
 const ease = (t: number) => 1 - Math.pow(1 - t, 3);
 
-export function CameraRig({ api, homeDistance }: { api: CameraApiRef; homeDistance?: number }) {
+export function CameraRig({ api, homeDistance, homeAzimuth = 0 }: { api: CameraApiRef; homeDistance?: number; homeAzimuth?: number }) {
   const controls = useRef<OrbitControlsImpl>(null);
   const tween = useRef<Tween | null>(null);
   const camera = useThree((s) => s.camera);
-  const homeRef = useRef(homeDistance);
+  const homeRef = useRef({ distance: homeDistance, azimuth: homeAzimuth });
 
   useEffect(() => {
     const go = (pos: Vec3, target: Vec3) => {
@@ -51,7 +51,7 @@ export function CameraRig({ api, homeDistance }: { api: CameraApiRef; homeDistan
         const [p, t] = current();
         go(orbitY(p, t, angle), t);
       },
-      home: () => go(homePosition(homeRef.current), HOME_TARGET),
+      home: () => go(homePosition(homeRef.current.distance, homeRef.current.azimuth), HOME_TARGET),
       focus: (target, distance = 60) => {
         const [p, t] = current();
         const offset: Vec3 = [p[0] - t[0], p[1] - t[1], p[2] - t[2]];
@@ -68,15 +68,15 @@ export function CameraRig({ api, homeDistance }: { api: CameraApiRef; homeDistan
   // A view with its own framing: jump there on first mount, glide there when the view changes.
   const first = useRef(true);
   useEffect(() => {
-    homeRef.current = homeDistance;
+    homeRef.current = { distance: homeDistance, azimuth: homeAzimuth };
     if (first.current) {
       first.current = false;
-      camera.position.set(...homePosition(homeDistance));
+      camera.position.set(...homePosition(homeDistance, homeAzimuth));
       controls.current?.update();
       return;
     }
     api.current?.home();
-  }, [homeDistance, api, camera]);
+  }, [homeDistance, homeAzimuth, api, camera]);
 
   useFrame((_, dt) => {
     const tw = tween.current;

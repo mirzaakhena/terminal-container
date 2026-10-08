@@ -45,3 +45,12 @@ describe('home position', () => {
     expect(homePosition()).toBe(HOME_POSITION);
   });
 });
+
+describe('home azimuth', () => {
+  it('turns the home view about the vertical axis, keeping height and distance', () => {
+    const p = homePosition(100, Math.PI / 2);
+    expect(length(p)).toBeCloseTo(100, 6);
+    expect(p[1]).toBeCloseTo(homePosition(100)[1], 6);
+    expect(p[2]).toBeLessThan(0);
+  });
+});

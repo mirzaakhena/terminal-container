@@ -24,10 +24,12 @@ export interface BlockProps extends GroupProps {
   state: BlockState;
   name?: string;
   showLabels?: boolean;
+  /** Where the bay numbers stand across the block (z in the block frame); default just past the last row. */
+  bayLabelZ?: number;
 }
 
 /** A storage block: painted pad and slots, bay/row numbers, and its containers. Origin at the block corner. */
-export function Block({ state, name, showLabels = true, ...group }: BlockProps) {
+export function Block({ state, name, showLabels = true, bayLabelZ, ...group }: BlockProps) {
   const { config } = state;
   const L = blockLength(config);
   const W = blockWidth(config);
@@ -71,7 +73,7 @@ export function Block({ state, name, showLabels = true, ...group }: BlockProps) 
       {showLabels && (
         <>
           {Array.from({ length: config.bays }, (_, i) => (
-            <Label key={`bl${i}`} position={[x0 + (i + 0.5) * BAY_PITCH, 0.05, W + 0.9]} title={String(i * 2 + 1).padStart(2, '0')} />
+            <Label key={`bl${i}`} position={[x0 + (i + 0.5) * BAY_PITCH, 0.05, bayLabelZ ?? W + 0.9]} title={String(i * 2 + 1).padStart(2, '0')} />
           ))}
           {Array.from({ length: config.rows }, (_, r) => (
             <Label key={`rl${r}`} position={[L + 1.3, 0.05, z0 + (r + 0.5) * ROW_PITCH]} title={`R${String(r + 1).padStart(2, '0')}`} />

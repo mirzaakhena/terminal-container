@@ -4,11 +4,15 @@ export type Vec3 = [number, number, number];
 export const HOME_TARGET: Vec3 = [0, 0, 0];
 export const HOME_POSITION: Vec3 = [44, 39, 44];
 
-/** The home view at a given distance from the target, same direction as HOME_POSITION. */
-export function homePosition(distance?: number): Vec3 {
-  if (distance === undefined) return HOME_POSITION;
-  const k = distance / length(HOME_POSITION);
-  return [HOME_POSITION[0] * k, HOME_POSITION[1] * k, HOME_POSITION[2] * k];
+/**
+ * The home view at a given distance from the target, in the same direction as HOME_POSITION,
+ * optionally turned about the vertical axis by `azimuth` radians.
+ */
+export function homePosition(distance?: number, azimuth = 0): Vec3 {
+  if (distance === undefined && azimuth === 0) return HOME_POSITION;
+  const k = (distance ?? length(HOME_POSITION)) / length(HOME_POSITION);
+  const p: Vec3 = [HOME_POSITION[0] * k, HOME_POSITION[1] * k, HOME_POSITION[2] * k];
+  return azimuth ? orbitY(p, HOME_TARGET, azimuth) : p;
 }
 
 export const MIN_DISTANCE = 12;

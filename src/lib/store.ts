@@ -13,6 +13,12 @@ export function createStore<T>(initial: T) {
     state = { ...state, ...(typeof patch === 'function' ? patch(state) : patch) };
     listeners.forEach((l) => l());
   };
-  const use = () => useSyncExternalStore(subscribe, get, get);
+  /** Subscribe a component; pass a selector returning a primitive to re-render only when that value changes. */
+  function use(): T;
+  function use<U>(selector: (s: T) => U): U;
+  function use<U>(selector?: (s: T) => U): T | U {
+    const read: () => T | U = selector ? () => selector(state) : get;
+    return useSyncExternalStore<T | U>(subscribe, read, read);
+  }
   return { get, set, use };
 }

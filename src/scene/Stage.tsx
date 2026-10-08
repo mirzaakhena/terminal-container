@@ -14,11 +14,13 @@ interface StageProps {
   showGrid: boolean;
   /** Home-view distance for the current view; the camera moves there when it changes. */
   homeDistance?: number;
+  /** Turns the home view about the vertical axis, radians. */
+  homeAzimuth?: number;
   children?: ReactNode;
 }
 
 /** The 3D world every view is drawn into: camera, lights, ground and scale aids. */
-export function Stage({ cameraApi, showGrid, homeDistance, children }: StageProps) {
+export function Stage({ cameraApi, showGrid, homeDistance, homeAzimuth, children }: StageProps) {
   return (
     <Canvas
       shadows={{ type: PCFSoftShadowMap }}
@@ -31,7 +33,7 @@ export function Stage({ cameraApi, showGrid, homeDistance, children }: StageProp
       <Lights />
       <Ground showGrid={showGrid} />
       {showGrid && <ScaleRuler position={[-5, 0, 26]} />}
-      <CameraRig api={cameraApi} homeDistance={homeDistance} />
+      <CameraRig api={cameraApi} homeDistance={homeDistance} homeAzimuth={homeAzimuth} />
       {children}
     </Canvas>
   );
