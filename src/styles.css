@@ -1,0 +1,116 @@
+:root {
+  --brand: #2f5bea;
+  --brand-dark: #1f3fb8;
+  --brand-soft: #e6ecfe;
+  --text: #1b2033;
+  --text-muted: #6b7189;
+  --card: #ffffff;
+  --card-border: rgba(27, 32, 51, 0.06);
+  --shadow: 0 6px 24px rgba(40, 50, 100, 0.10), 0 1px 3px rgba(40, 50, 100, 0.06);
+  --radius: 14px;
+  --bg: #e8eaf5;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.app canvas { display: block; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.header {
+  position: absolute;
+  inset: 16px 16px auto 16px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  pointer-events: none;
+}
+.header > * { pointer-events: auto; }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.view-tabs { display: flex; gap: 4px; padding: 4px; }
+.view-tabs button {
+  border: 0;
+  background: transparent;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.view-tabs button.active { background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+
+.camera-controls {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px;
+  gap: 2px;
+}
+.camera-controls button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+}
+.camera-controls button:hover { background: #f1f3fa; }
+.camera-controls button.active { color: var(--brand); background: var(--brand-soft); }
+.camera-controls .divider { width: 22px; height: 1px; background: var(--card-border); margin: 4px 0; }
+
+.scene-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand-dark);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(40, 50, 100, 0.12);
+  pointer-events: none;
+}
+
+@media (max-width: 600px) {
+  .brand { font-size: 18px; }
+  .camera-controls { top: auto; bottom: 16px; transform: none; }
+}
