@@ -6,7 +6,7 @@ labels: [quay, scene]
 reporter: mirza
 assign_to: claude
 created: 2026-10-16 17:09:47
-updated: 2026-10-16 20:17:58
+updated: 2026-10-16 20:20:20
 related: []
 blocked_by: []
 ---
@@ -42,6 +42,7 @@ roads so a truck can drive from the gate to the quay and on to the yard block.
 - 2026-10-16 17:47:07 todo
 - 2026-10-16 18:15:58 in_progress
 - 2026-10-16 20:17:58 review
+- 2026-10-16 20:20:20 done
 
 ## Notes
 - 2026-10-16 17:19:03: answered question: Where does the quay sit relative to Block A? (a) Along the block's long side, on the side away from the gate road, so the block sits between the gate road and the apron, as at most real terminals; (b) past the far end of the block; (c) the worker chooses. Recommended: (a). The quay and the block then run in the same direction, and a truck goes gate, block lane, round the block's end, apron.
@@ -64,3 +65,21 @@ roads so a truck can drive from the gate to the quay and on to the yard block.
 - 2026-10-16 20:05:00: test runs red only on the Crane view's timing tests (`e2e/crane.spec.ts`: "held key / held button / hidden tab lets go", "letting go normally lines up on a bay" — "the crane kept moving instead of stopping" within 30 s). Build, all 115 unit tests and every other browser test pass, including the new `e2e/quay.spec.ts`. The machine was under heavy load from other projects the whole time (load average 20–200: other Playwright suites, `yes` processes, flutter tests), and the headless browser ran at 0.1–4 frames a second; the Crane view steps its crane at most 0.1 s per frame, so it cannot stop within 30 s. The unchanged HEAD fails the same tests under the same load (2 of 4, then 1 of 4, in a clean worktree of be4655f), and the Crane view's frame rate measured the same for HEAD and this change. This ticket does not touch the Crane view or its controller. Needs a rerun of `test-run.sh` on a quieter machine.
 - 2026-10-16 20:17:51: test run — `npm run build && npm test && npm run test:e2e` exited 0 after 2m15s, on content fingerprint a937e92b8c2d8dd22919075ea991daeb3d0679e8 (the same before and after the run; .kerjaan/ left out).
 - 2026-10-16 20:18:30: rerun once the machine had quietened (load average about 8): `test-run.sh` exited 0, all 15 browser tests passed, including the four Crane view timing tests, on the same content fingerprint a937e92b. That settles the red runs above as load, not this change.
+- 2026-10-16 20:25: review.
+  Reviewed at level quick (the ticket sets no level), round 1, at commit 79c6906 (HEAD 9186ba8 adds only ticket notes). The project's checks were not run again: `test-run.sh --check` answered SAME, so the worker's passing run of 2026-10-16 20:17:51 (`npm run build && npm test && npm run test:e2e`, exit 0, fingerprint a937e92b8c2d8dd22919075ea991daeb3d0679e8) is carried as this review's one full run. The change was read against the criteria. Went past quick in one place, as the owner decided for the look-and-feel lines: the app was started (`npx vite`, on its own port; load average about 7) and the Yard view was screenshotted in headless Chromium — home view, quay edge from above, quay edge from the water side, and a demo drive — and compared with `docs/style-reference.png`. No branch carries this ticket's ID: the work is on main.
+  - Quay edge with water, soft style: met. Pale paving, white coping, dark fenders and bollards, soft blue water with faint swell lines, a grey shore wall 1.6 m down. Same flat, light palette as the rest of the scene. Seen in the screenshots.
+  - Berth marked: met. 11 bollards along the edge; the label "Berth 1 · 200 m / for a 150 m ship" is on screen. 200 m = 150 m ship + 25 m at each end.
+  - Apron lanes between the crane legs: met. Measured from the layout in the running app: landside rail at z 44.7, waterside rail at 75.2 (30.48 m gauge); the four lanes are centred at 52.3–67.6, 4.5 m wide, painted with the same asphalt colour and white centre line as the block lane. The backreach (27.7–42.7) is marked and kept free.
+  - Road joining apron, gate road and block lane, with a demo drive: met. Pressed "Demo drive via quay" in the browser and stepped the truck. Its path went east along the gate road (z −32.6), north up the connector at x 120.6, then west along apron lane 1 (z 52.3). The browser test `e2e/quay.spec.ts` checks the rest of the trip (apron, then block lane, then gone) and was part of the carried passing run. Screenshot shows the truck on the apron heading west.
+  - Quay along the long side, away from the gate road, no overlap: met. Block A covers z 0–18.2 (yard frame), the block lane is at z −2.65 and the gate road at −32.6. The quay starts at z 26.2, 6 m past the yard crane's furthest reach (20.2). Both connectors are outside the crane's travel range (keepClear).
+  - Home view: met. The block sits in the middle of the screen at a readable size, with the berth label, bollards, backreach, apron and water behind it.
+  Notes (not blocking):
+  - With the grid on, the "10 m" scale ruler (`Stage.tsx`, fixed at world [-5, 0, 26]) now lies on the quay, between the landside rail and apron lane 1. It overlaps the apron in the home view.
+  - During a demo drive the "Trucks on site" card says 1, while the Trucks tab in the bottom-right panel still says "Trucks 0 · No trucks yet". The tab seems to list only job trucks.
+  - `palette.coping` is defined but not used; the coping uses `materials.white`.
+  - For the tickets that build on this: the berth follows the ship's length only as a function argument. `QUAY`, `QUAY_TOUR` and `YARD_SHORE_Z` are computed once when the module loads, for the default 150 m ship, and the view list reads `shoreZ` once. No ship-size setting exists yet. The vessel ticket will have to recompute these when the ship size changes, or the berth will not grow or shrink as asked. Otherwise the layout is a sound base. It exposes rails, lane centres, backreach, berth and ship extents and connectors as plain numbers in the yard frame, through `yardQuay()` and `__porttrack.yard.layout`.
+
+### Suggested follow-up
+
+- **The scale ruler lies on the quay.** With the grid on, the "10 m" ruler is drawn at a fixed spot, which now falls between the quay crane's landside rail and the first apron lane. It covers the apron in the Yard home view. Worth a ticket: each view places the ruler where it covers nothing of interest.
+- **The Trucks tab ignores the demo truck.** While a demo drive is on site, the top card counts 1 truck but the bottom-right Trucks tab says none. Worth a ticket: the tab lists the demo truck too, or the card leaves it out, so the two agree.

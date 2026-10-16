@@ -1,10 +1,5 @@
 Sixth batch: the quayside, the vessel and the quay crane, joined to the yard.
 
-**First, on its own.** Everything after it stands on the quay, the berth and
-the apron lanes it lays out.
-
-- 261016170901 Quayside with berth water and apron lanes
-
 **Then on its own.** The ship needs the berth, and both the stowage and the
 quay crane are sized from this ship.
 
