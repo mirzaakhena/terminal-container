@@ -50,6 +50,8 @@ Run only the browser check with `npm run test:e2e`; add `-- --headed` to watch i
 While running `npm run dev`, `window.__porttrack` in the browser console reaches the live simulations:
 
 - `__porttrack.yard.runner` — the yard's job runner (`jobs`, `crane`, `truck`, `add(...)`); `__porttrack.yard.bump()` redraws.
+- `__porttrack.yard.layout` — where things are in the Yard view: the yard frame's `origin` in the world, the block size, the block lane's `laneZ`, and the `quay` (berth, apron lanes, rails, backreach, bollards, road connectors; see `src/models/quay/layout.ts`).
+- `__porttrack.camera` — `position()`, `target()`, `focus([x, y, z], distance)`, `rotate(angle)` and `project([x, y, z])` (screen position, -1…1).
 - `__porttrack.crane.controller` — the crane in the Crane view (`moveTo`, `jog`, `lock`, `release`, `setSpreader`); `__porttrack.crane.bump()` redraws.
 
 It is not present in production builds.

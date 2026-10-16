@@ -17,6 +17,8 @@ interface StageProps {
   homeDistance?: number;
   /** Turns the home view about the vertical axis, radians. */
   homeAzimuth?: number;
+  /** World z where the land ends in a shore, with water beyond (views with a quayside). */
+  shoreZ?: number;
   children?: ReactNode;
 }
 
@@ -28,7 +30,7 @@ function ExposeScene() {
 }
 
 /** The 3D world every view is drawn into: camera, lights, ground and scale aids. */
-export function Stage({ cameraApi, showGrid, homeDistance, homeAzimuth, children }: StageProps) {
+export function Stage({ cameraApi, showGrid, homeDistance, homeAzimuth, shoreZ, children }: StageProps) {
   return (
     <Canvas
       shadows={{ type: PCFSoftShadowMap }}
@@ -39,7 +41,7 @@ export function Stage({ cameraApi, showGrid, homeDistance, homeAzimuth, children
       <color attach="background" args={[palette.background]} />
       <fog attach="fog" args={[palette.background, 260, 620]} />
       <Lights />
-      <Ground showGrid={showGrid} />
+      <Ground showGrid={showGrid} shoreZ={shoreZ} />
       {showGrid && <ScaleRuler position={[-5, 0, 26]} />}
       <ExposeScene />
       <CameraRig api={cameraApi} homeDistance={homeDistance} homeAzimuth={homeAzimuth} />

@@ -35,7 +35,7 @@ export function KpiCards() {
         icon={<TruckIcon />}
         label="Trucks on site"
         value={truckOnSite ? 1 : 0}
-        detail={truckOnSite ? `${truckOnSite.id} ${truckOnSite.phase}` : queued ? `${queued} waiting at the gate` : 'none waiting'}
+        detail={truckOnSite ? `${truckOnSite.id} ${truckOnSite.phase === 'touring' ? 'on a demo drive' : truckOnSite.phase}` : queued ? `${queued} waiting at the gate` : 'none waiting'}
       />
       <Kpi
         icon={<CraneIcon />}

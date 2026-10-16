@@ -66,6 +66,14 @@ export function CameraRig({ api, homeDistance, homeAzimuth = 0 }: { api: CameraA
         position: () => camera.position.toArray(),
         target: () => controls.current?.target.toArray(),
         moving: () => !!tween.current,
+        /** Glides to look at a world point from the current direction (for screenshots and tests). */
+        focus: (target: Vec3, distance?: number) => api.current?.focus(target, distance),
+        rotate: (angle: number) => api.current?.rotate(angle),
+        /** Where a world point lands on screen, in normalised device coordinates (-1…1 across the canvas). */
+        project: (p: Vec3) => {
+          const v = new Vector3(...p).project(camera);
+          return [v.x, v.y, v.z];
+        },
       };
     }
     return () => {

@@ -7,6 +7,7 @@ import { SLOTS, planLoad, type SlotId, type TrailerLoad } from '../models/truck/
 import { TRAILER } from '../models/truck/spec';
 import { CraneController, LANE_Z } from '../models/crane';
 import { createRoute, type Route } from '../motion/route';
+import type { QuayLayout } from '../models/quay/layout';
 import { TruckMotion } from '../motion/truckMotion';
 import { containerUnder, floorUnder, solids, type ParkedTruck } from './world';
 
@@ -57,14 +58,37 @@ export type Refusal = { ok: false; reason: string };
 // ─── The truck route: in from the gate, round two corners, along the lane, out past the block ──────
 
 export const GATE_X = -90;
-const ENTRY_Z = LANE_Z - 30;
-const CORNER_X = -28;
+/** The gate road, south of the block lane. */
+export const ENTRY_Z = LANE_Z - 30;
+/** Where the road into the block lane leaves the gate road. */
+export const CORNER_X = -28;
+/** Radius of every road corner in the terminal. */
+export const TURN_RADIUS = 11;
+/** How far the block lane runs on past the block before trucks leave. */
+const EXIT_PAST_BLOCK = 70;
 
 export function laneRoute(blockLength: number): Route {
   return createRoute(
-    [[GATE_X, ENTRY_Z], [CORNER_X, ENTRY_Z], [CORNER_X, LANE_Z], [blockLength + 70, LANE_Z]],
-    11,
+    [[GATE_X, ENTRY_Z], [CORNER_X, ENTRY_Z], [CORNER_X, LANE_Z], [blockLength + EXIT_PAST_BLOCK, LANE_Z]],
+    TURN_RADIUS,
     { Gate: 0, Exit: 3 },
+  );
+}
+
+/**
+ * The roads joining the quay to the yard, driven end to end: in at the gate, east along the gate road,
+ * north up the east connector onto apron lane 1, west along the apron under where the quay crane will
+ * stand, south down the west connector into the block lane, east along the block and out.
+ * The connectors join the apron inside the berth's free ends, so they never cross the backreach
+ * beside the ship.
+ */
+export function quayTourRoute(blockLength: number, quay: Pick<QuayLayout, 'connectors' | 'lanes'>): Route {
+  const { westX, eastX } = quay.connectors;
+  const apronZ = quay.lanes[0].z;
+  return createRoute(
+    [[GATE_X, ENTRY_Z], [eastX, ENTRY_Z], [eastX, apronZ], [westX, apronZ], [westX, LANE_Z], [blockLength + EXIT_PAST_BLOCK, LANE_Z]],
+    TURN_RADIUS,
+    { Gate: 0, 'East connector': 1, 'Apron east': 2, 'Apron west': 3, 'Block lane': 4, Exit: 5 },
   );
 }
 
@@ -176,7 +200,8 @@ export interface ActiveTruck {
   load: TrailerLoad;
   ids: Partial<Record<SlotId, string>>;
   colors: Partial<Record<SlotId, number>>;
-  phase: 'arriving' | 'parked' | 'leaving';
+  /** `touring`: a demo drive along a route, with no crane work and no job. */
+  phase: 'arriving' | 'parked' | 'leaving' | 'touring';
   stopS: number;
 }
 
@@ -220,6 +245,27 @@ export class JobRunner {
     return { ok: true };
   }
 
+  /**
+   * Sends an empty truck along a route from its first point to its Exit, with no crane work: a demo
+   * drive. Only while nothing else is on site; queued jobs wait until it has left.
+   */
+  tour(route: Route): { ok: true; truckId: string } | Refusal {
+    if (this.paused) return { ok: false, reason: 'The queue is paused: resume it before a demo drive.' };
+    if (this.truck) return { ok: false, reason: `${this.truck.id} is still on site; one truck at a time.` };
+    if (this.busy) return { ok: false, reason: 'Jobs are waiting in the queue; a demo drive can go once they are done.' };
+    const motion = new TruckMotion(route);
+    try {
+      motion.driveTo('Exit');
+    } catch (e) {
+      return { ok: false, reason: (e as Error).message };
+    }
+    // The route runs along the block lane: keep the crane clear above it, as for job trucks.
+    this.crane.moveTo('hoist', this.crane.spec.hoist.max);
+    const id = `TRK-${String(++truckSeq).padStart(2, '0')}`;
+    this.truck = { id, motion, load: {}, ids: {}, colors: {}, phase: 'touring', stopS: route.length };
+    return { ok: true, truckId: id };
+  }
+
   /** Adds a job to the queue, or explains why it cannot be done. */
   add(req: JobRequest): { ok: true; job: Job } | Refusal {
     const plan = planJob(this.planned, req);
@@ -253,6 +299,11 @@ export class JobRunner {
       return;
     }
     if (this.paused) return;
+    if (this.truck?.phase === 'touring') {
+      // A demo drive is on site: jobs wait until it has left.
+      if (!this.truck.motion.moving) this.truck = null;
+      return;
+    }
 
     let job = this.current;
     if (!job) {

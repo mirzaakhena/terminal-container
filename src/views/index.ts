@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { YardPanel, YardView } from './YardView';
+import { YARD_SHORE_Z, YardPanel, YardView } from './YardView';
 import { ContainersView } from './ContainersView';
 import { TruckPanel, TruckView } from './TruckView';
 import { BlockPanel, BlockView } from './BlockView';
@@ -17,10 +17,12 @@ export interface ViewDef {
   homeDistance?: number;
   /** Turns the home view about the vertical axis (radians), to look at a view from another side. */
   homeAzimuth?: number;
+  /** World z where the land ends in a shore with water beyond, for views with a quayside. */
+  shoreZ?: number;
 }
 
 export const views: ViewDef[] = [
-  { id: 'yard', label: 'Yard', Component: YardView, Panel: YardPanel, homeDistance: 150, homeAzimuth: Math.PI / 2 },
+  { id: 'yard', label: 'Yard', Component: YardView, Panel: YardPanel, homeDistance: 200, homeAzimuth: Math.PI / 2, shoreZ: YARD_SHORE_Z },
   { id: 'containers', label: 'Containers', Component: ContainersView },
   { id: 'truck', label: 'Truck', Component: TruckView, Panel: TruckPanel },
   { id: 'block', label: 'Block', Component: BlockView, Panel: BlockPanel, homeDistance: 120 },

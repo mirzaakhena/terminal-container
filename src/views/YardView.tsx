@@ -6,11 +6,12 @@ import { createStore } from '../lib/store';
 import { CONTAINER_SPECS, type ContainerType } from '../models/container';
 import { Block, blockLength, blockWidth, demoFill, formatAddress } from '../models/yard';
 import { Tractor, Trailer, Truck } from '../models/truck';
-import { CraneController, LANE_WIDTH, RtgCrane, craneSpec } from '../models/crane';
+import { CraneController, LANE_WIDTH, LANE_Z, RtgCrane, craneSpec } from '../models/crane';
 import { sampleRoute } from '../motion/route';
-import { JOB_STAGES, JobRunner, suggestDelivery, suggestReceiving, type Address, type Job, type Pause } from '../sim/jobs';
+import { JOB_STAGES, JobRunner, quayTourRoute, suggestDelivery, suggestReceiving, type Address, type Job, type Pause } from '../sim/jobs';
 import type { World } from '../sim/world';
 import { RoadRibbon } from '../scene/RoadRibbon';
+import { Quayside, yardQuay } from '../models/quay';
 import { Label } from '../scene/Label';
 import { DEFAULT_BLOCK } from './BlockView';
 import { select } from '../ui/dashboard/selection';
@@ -18,6 +19,21 @@ import { clearStageTimes } from '../ui/dashboard/yardStats';
 import { clearEvents } from '../ui/dashboard/events';
 import type { ThreeEvent } from '@react-three/fiber';
 import { debugHandle } from '../lib/debug';
+
+const L = blockLength(DEFAULT_BLOCK);
+const W = blockWidth(DEFAULT_BLOCK);
+/** The quayside beside Block A, with its berth sized for the default ship. */
+export const QUAY = yardQuay(DEFAULT_BLOCK);
+/** The demo drive: gate, along the apron, through the block lane and out. */
+export const QUAY_TOUR = quayTourRoute(L, QUAY);
+/**
+ * Where the yard frame's origin (Block A's corner) sits in the world. The block is centred along x;
+ * across, the world origin (the home view's target) lies a little toward the quay, so the home view
+ * shows the block with the quayside behind it.
+ */
+export const YARD_ORIGIN: [number, number, number] = [-L / 2, 0, -W / 2 - 14];
+/** World z of the quay edge, where the land ends and the water begins. */
+export const YARD_SHORE_Z = QUAY.edgeZ + YARD_ORIGIN[2];
 
 /** The whole terminal: one block, its crane, and trucks coming and going for queued jobs. */
 function createYard() {
@@ -42,7 +58,9 @@ export const yardStore = createStore({
 
 const bump = () => yardStore.set((s) => ({ version: s.version + 1 }));
 const exposeForDebugging = () => {
-  if (import.meta.env.DEV) debugHandle().yard = { runner: yard, bump: () => bump() };
+  if (import.meta.env.DEV) {
+    debugHandle().yard = { runner: yard, bump: () => bump(), layout: { origin: YARD_ORIGIN, block: { length: L, width: W }, laneZ: LANE_Z, quay: QUAY } };
+  }
 };
 exposeForDebugging();
 
@@ -55,8 +73,6 @@ export function resetYard() {
   bump();
 }
 
-const L = blockLength(DEFAULT_BLOCK);
-const W = blockWidth(DEFAULT_BLOCK);
 const laneMat = new MeshBasicMaterial({ color: palette.asphalt });
 const laneLineMat = new MeshBasicMaterial({ color: '#ffffff' });
 
@@ -105,6 +121,7 @@ export function YardView() {
   yardStore.use((s) => s.version);
   const last = useRef({ t: 0, world: yard.crane.world, truck: '' });
   const road = useMemo(() => sampleRoute(yard.route, 0.5), []);
+  const tourRoad = useMemo(() => sampleRoute(QUAY_TOUR, 0.5), []);
 
   useFrame((state, dt) => {
     yard.step(Math.min(dt, 0.1) * yardStore.get().speed);
@@ -129,9 +146,16 @@ export function YardView() {
 
   const gate = yard.route.at(0);
   return (
-    <group position={[-L / 2, 0, -W / 2]}>
-      <RoadRibbon points={road} width={LANE_WIDTH} material={laneMat} />
-      <RoadRibbon points={road} width={0.12} y={0.015} material={laneLineMat} />
+    <group position={YARD_ORIGIN}>
+      <Quayside quay={QUAY} />
+      <group name="roads">
+        {[road, tourRoad].map((r, i) => (
+          <group key={i}>
+            <RoadRibbon points={r} width={LANE_WIDTH} material={laneMat} />
+            <RoadRibbon points={r} width={0.12} y={0.015} material={laneLineMat} />
+          </group>
+        ))}
+      </group>
       <Label position={[gate.x + 6, 0.1, gate.z - 4]} title="Gate" />
       <group {...pickable(() => select({ kind: 'block' }))}>
         <Block state={yard.crane.world.block} name="Block A" bayLabelZ={yard.crane.spec.legZ[0] - 1.6} />
@@ -213,6 +237,11 @@ export function YardPanel() {
     say(true, `${added} demo jobs queued.`);
   };
 
+  const tour = () => {
+    const r = yard.tour(QUAY_TOUR);
+    say(r.ok, r.ok ? `${r.truckId} on a demo drive: in at the gate, along the apron, through the block lane and out.` : r.reason);
+  };
+
   const visible = jobs.slice(-4).reverse();
   const resume = () => {
     const r = yard.resume();
@@ -271,6 +300,7 @@ export function YardPanel() {
         <button className="chip" onClick={suggest}>Pick for me</button>
         <button className="chip primary" onClick={add}>Queue job</button>
         <button className="chip" onClick={demo}>Queue demo jobs</button>
+        <button className="chip" onClick={tour} title="An empty truck drives from the gate along the apron, through the block lane and out">Demo drive via quay</button>
         <span className="hint">Speed</span>
         <div className="segmented">
           {[1, 4, 10].map((v) => (

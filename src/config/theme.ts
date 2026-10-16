@@ -16,6 +16,14 @@ export const palette = {
   asphalt: '#d4d8ea',
   marking: '#f6d77a',
 
+  /** Quayside: pale paving, a white coping along the edge, soft blue water. */
+  quay: '#f4f5fb',
+  quayWall: '#b3bad3',
+  coping: '#ffffff',
+  water: '#c4d6f2',
+  waterLine: '#d6e3f7',
+  craneRail: '#9aa1b8',
+
   steel: '#c9cede',
   steelDark: '#5b6278',
   rubber: '#2b2f3a',

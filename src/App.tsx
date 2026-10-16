@@ -23,7 +23,7 @@ export function App() {
 
   return (
     <div className="app">
-      <Stage cameraApi={cameraApi} showGrid={showGrid} homeDistance={view.homeDistance} homeAzimuth={view.homeAzimuth}>
+      <Stage cameraApi={cameraApi} showGrid={showGrid} homeDistance={view.homeDistance} homeAzimuth={view.homeAzimuth} shoreZ={view.shoreZ}>
         <view.Component key={view.id} />
       </Stage>
       <Header viewId={view.id} onViewChange={changeView} />

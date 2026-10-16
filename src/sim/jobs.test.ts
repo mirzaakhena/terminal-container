@@ -190,3 +190,140 @@ describe('job form suggestions', () => {
     }
   });
 });
+
+import { blockWidth, type BlockConfig } from '../models/yard';
+import { LANE_WIDTH, LANE_Z } from '../models/crane';
+import { yardQuay, yardCraneFarZ, yardCraneXRange } from '../models/quay';
+import { MAX_ARTICULATION, TruckMotion, peakArticulation } from '../motion/truckMotion';
+import { GATE_X, ENTRY_Z, TURN_RADIUS, quayTourRoute } from './jobs';
+
+describe('demo drive from the gate along the apron to the yard and out', () => {
+  const CONFIGS: BlockConfig[] = [cfg, { bays: 10, rows: 6, tiers: 5 }, { bays: 2, rows: 1, tiers: 1 }, { bays: 24, rows: 10, tiers: 7 }];
+  const SHIPS = [80, 150, 400];
+  const cases = CONFIGS.flatMap((block) => SHIPS.map((ship) => ({ block, ship, what: `block ${block.bays}x${block.rows}x${block.tiers}, ship ${ship} m` })));
+
+  it('passes the gate, the whole berth along apron lane 1, the block lane past the whole block, then the exit, in that order', () => {
+    for (const { block, ship, what } of cases) {
+      const quay = yardQuay(block, ship);
+      const L = blockLength(block);
+      const route = quayTourRoute(L, quay);
+      const lane1 = quay.lanes[0].z;
+      const start = route.at(0);
+      expect([start.x, start.z], what).toEqual([GATE_X, ENTRY_Z]);
+      let apronFrom = Infinity, apronTo = -Infinity, apronFirst = -1, laneFrom = Infinity, laneTo = -Infinity, laneFirst = -1;
+      for (let s = 0; s <= route.length; s += 0.5) {
+        const p = route.at(s);
+        if (Math.abs(p.z - lane1) < 1e-6) {
+          if (apronFirst < 0) apronFirst = s;
+          apronFrom = Math.min(apronFrom, p.x);
+          apronTo = Math.max(apronTo, p.x);
+        }
+        if (Math.abs(p.z - LANE_Z) < 1e-6 && s > apronFirst && apronFirst >= 0) {
+          if (laneFirst < 0) laneFirst = s;
+          laneFrom = Math.min(laneFrom, p.x);
+          laneTo = Math.max(laneTo, p.x);
+        }
+      }
+      expect(apronFirst, `${what}: never on the apron`).toBeGreaterThan(0);
+      expect(laneFirst, `${what}: never in the block lane after the apron`).toBeGreaterThan(apronFirst);
+      expect(apronFrom, `${what}: apron stretch`).toBeLessThan(quay.ship.x0);
+      expect(apronTo, `${what}: apron stretch`).toBeGreaterThan(quay.ship.x1);
+      expect(laneFrom, `${what}: block lane stretch`).toBeLessThan(0);
+      expect(laneTo, `${what}: block lane stretch`).toBeGreaterThan(L);
+      const end = route.at(route.length);
+      expect(route.stops.Exit, what).toBeCloseTo(route.length, 6);
+      expect(end.z, what).toBeCloseTo(LANE_Z, 6);
+      expect(end.x, what).toBeGreaterThan(L);
+      expect(peakArticulation(route), `${what}: a corner too tight for the trailer`).toBeLessThanOrEqual(MAX_ARTICULATION);
+      expect(new TruckMotion(route).routeProblem, what).toBeNull();
+    }
+  });
+
+  it('stays on roads: off the block and away from the crane except in the block lane, and on the quay only on lane 1 and the connectors', () => {
+    for (const { block, ship, what } of cases) {
+      const quay = yardQuay(block, ship);
+      const route = quayTourRoute(blockLength(block), quay);
+      const spec = craneSpec(block);
+      const [cx0, cx1] = yardCraneXRange(block);
+      const craneZ0 = spec.legZ[0] - 1;
+      const craneZ1 = yardCraneFarZ(block);
+      const half = LANE_WIDTH / 2;
+      const { westX, eastX } = quay.connectors;
+      const lane1 = quay.lanes[0].z;
+      for (let s = 0; s <= route.length; s += 0.25) {
+        const { x, z } = route.at(s);
+        const at = `${what}: at ${x.toFixed(1)}, ${z.toFixed(1)}`;
+        // Near the block or its crane only in the block lane.
+        const nearYard = x + half > cx0 && x - half < cx1 && z + half > craneZ0 && z - half < craneZ1;
+        if (nearYard) expect(Math.abs(z - LANE_Z), at).toBeLessThan(1e-6);
+        expect(x + half > 0 && x - half < blockLength(block) && z + half > 0 && z - half < blockWidth(block), `${at}: on the block`).toBe(false);
+        // Never past lane 1 toward the water; on the quay beside the ship only in lane 1.
+        expect(z, at).toBeLessThanOrEqual(lane1 + 1e-6);
+        if (z + half > quay.landZ && Math.abs(z - lane1) > 1e-6) {
+          const nearConnector = Math.min(Math.abs(x - westX), Math.abs(x - eastX)) <= TURN_RADIUS + 1e-6;
+          expect(nearConnector, `${at}: crossing the quay away from the connectors`).toBe(true);
+          expect(x < quay.ship.x0 || x > quay.ship.x1, `${at}: across the backreach beside the ship`).toBe(true);
+        }
+      }
+    }
+  });
+
+  const tourRunner = () => {
+    const r = build();
+    return { r, route: quayTourRoute(blockLength(cfg), yardQuay(cfg)) };
+  };
+
+  it('an empty truck drives it to the end and leaves; the crane stays raised clear of it the whole way', () => {
+    const { r, route } = tourRunner();
+    // The crane left low, as a person might leave it.
+    r.crane.hoist.pos = r.crane.hoist.target = 1;
+    const [cx0, cx1] = yardCraneXRange(cfg);
+    let underCrane = 0;
+    const res = r.tour(route);
+    expect(res.ok).toBe(true);
+    expect(r.truck?.phase).toBe('touring');
+    let lastS = 0;
+    for (let t = 0; t < 600 && r.truck; t += 0.05) {
+      r.step(0.05);
+      if (!r.truck) break;
+      expect(r.truck.motion.s).toBeGreaterThanOrEqual(lastS);
+      lastS = r.truck.motion.s;
+      const p = r.truck.motion.pose();
+      if (Math.abs(p.z - LANE_Z) < 1e-6 && p.x > cx0 - 20 && p.x < cx1 + 20) {
+        underCrane++;
+        const { bottom } = hangingClearance(r.crane);
+        expect(bottom, `spreader low over the truck at x=${p.x.toFixed(1)}`).toBeGreaterThan(TRUCK_TOP({}) + 0.3);
+      }
+    }
+    expect(underCrane, 'the truck never drove under the crane').toBeGreaterThan(0);
+    expect(r.truck, 'the truck never left').toBeNull();
+    expect(lastS).toBeCloseTo(route.length, 1);
+    expect(r.crane.world.trucks).toEqual([]);
+  });
+
+  it('is refused while a truck is on site, jobs are waiting or the queue is paused; jobs wait until it has left', () => {
+    const { r, route } = tourRunner();
+    // Jobs waiting.
+    r.add({ kind: 'delivery', from: [{ bay: 3, row: 2, tier: 1 }] });
+    const queued = r.tour(route);
+    expect(queued.ok).toBe(false);
+    expect(reason(queued)).toMatch(/waiting in the queue/);
+    runAll(r);
+    expect(r.jobs[0].status).toBe('done');
+    // Paused.
+    r.paused = { jobId: 'JOB-X', reason: 'test', recovering: false, refused: [] };
+    expect(reason(r.tour(route))).toMatch(/paused/);
+    r.paused = null;
+    // A truck on site, and a job queued during the drive waits for it.
+    expect(r.tour(route).ok).toBe(true);
+    expect(reason(r.tour(route))).toMatch(/still on site/);
+    r.add({ kind: 'delivery', from: [{ bay: 1, row: 1, tier: 2 }] });
+    for (let t = 0; t < 600 && r.truck?.phase === 'touring'; t += 0.05) {
+      r.step(0.05);
+      expect(r.jobs[1].status, 'the job started while the demo truck was on site').toBe('queued');
+    }
+    expect(r.truck).toBeNull();
+    expect(runAll(r)).toEqual([]);
+    expect(r.jobs[1].status).toBe('done');
+  });
+});
