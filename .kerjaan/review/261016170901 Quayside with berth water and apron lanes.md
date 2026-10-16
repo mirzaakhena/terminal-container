@@ -6,7 +6,7 @@ labels: [quay, scene]
 reporter: mirza
 assign_to: claude
 created: 2026-10-16 17:09:47
-updated: 2026-10-16 20:17:52
+updated: 2026-10-16 20:17:58
 related: []
 blocked_by: []
 ---
@@ -41,6 +41,7 @@ roads so a truck can drive from the gate to the quay and on to the yard block.
 - 2026-10-16 17:09:47 backlog
 - 2026-10-16 17:47:07 todo
 - 2026-10-16 18:15:58 in_progress
+- 2026-10-16 20:17:58 review
 
 ## Notes
 - 2026-10-16 17:19:03: answered question: Where does the quay sit relative to Block A? (a) Along the block's long side, on the side away from the gate road, so the block sits between the gate road and the apron, as at most real terminals; (b) past the far end of the block; (c) the worker chooses. Recommended: (a). The quay and the block then run in the same direction, and a truck goes gate, block lane, round the block's end, apron.
