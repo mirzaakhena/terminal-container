@@ -6,7 +6,7 @@ labels: [quay, scene]
 reporter: mirza
 assign_to: claude
 created: 2026-10-16 17:09:47
-updated: 2026-10-16 19:40:28
+updated: 2026-10-16 20:17:52
 related: []
 blocked_by: []
 ---
@@ -61,3 +61,5 @@ roads so a truck can drive from the gate to the quay and on to the yard block.
 - 2026-10-16 18:58:50: test run — `npm run build && npm test && npm run test:e2e` exited 1 after 8m28s, on content fingerprint a937e92b8c2d8dd22919075ea991daeb3d0679e8 (the same before and after the run; .kerjaan/ left out).
 - 2026-10-16 19:40:28: test run — `npm run build && npm test && npm run test:e2e` exited 1 after 5m21s, on content fingerprint a937e92b8c2d8dd22919075ea991daeb3d0679e8 (the same before and after the run; .kerjaan/ left out).
 - 2026-10-16 20:05:00: test runs red only on the Crane view's timing tests (`e2e/crane.spec.ts`: "held key / held button / hidden tab lets go", "letting go normally lines up on a bay" — "the crane kept moving instead of stopping" within 30 s). Build, all 115 unit tests and every other browser test pass, including the new `e2e/quay.spec.ts`. The machine was under heavy load from other projects the whole time (load average 20–200: other Playwright suites, `yes` processes, flutter tests), and the headless browser ran at 0.1–4 frames a second; the Crane view steps its crane at most 0.1 s per frame, so it cannot stop within 30 s. The unchanged HEAD fails the same tests under the same load (2 of 4, then 1 of 4, in a clean worktree of be4655f), and the Crane view's frame rate measured the same for HEAD and this change. This ticket does not touch the Crane view or its controller. Needs a rerun of `test-run.sh` on a quieter machine.
+- 2026-10-16 20:17:51: test run — `npm run build && npm test && npm run test:e2e` exited 0 after 2m15s, on content fingerprint a937e92b8c2d8dd22919075ea991daeb3d0679e8 (the same before and after the run; .kerjaan/ left out).
+- 2026-10-16 20:18:30: rerun once the machine had quietened (load average about 8): `test-run.sh` exited 0, all 15 browser tests passed, including the four Crane view timing tests, on the same content fingerprint a937e92b. That settles the red runs above as load, not this change.
