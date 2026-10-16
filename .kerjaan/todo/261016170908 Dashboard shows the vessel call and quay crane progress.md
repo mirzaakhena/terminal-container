@@ -6,7 +6,7 @@ labels: [ui, dashboard, quay]
 reporter: mirza
 assign_to: claude
 created: 2026-10-16 17:09:54
-updated: 2026-10-16 17:11:13
+updated: 2026-10-16 17:47:09
 related: [261016170906, 261008104609]
 blocked_by: [261016170906]
 ---
@@ -32,6 +32,8 @@ crane in the equipment table.
 
 ## History
 - 2026-10-16 17:09:54 backlog
+- 2026-10-16 17:47:09 todo
 
 ## Notes
-(none yet)
+- 2026-10-16 17:19:45: files estimated to change: `e2e/header.spec.ts`, `src/styles.css`, `src/ui/Header.tsx`, `src/ui/dashboard/Dashboard.tsx`, `src/ui/dashboard/DetailPanel.tsx`, `src/ui/dashboard/FleetTable.tsx`, `src/ui/dashboard/KpiCards.tsx`, `src/ui/dashboard/events.ts`, `src/ui/dashboard/selection.ts`, `src/ui/dashboard/yardStats.test.ts`, `src/ui/dashboard/yardStats.ts`, `src/views/YardView.tsx`
+- Decision by mirza, 2026-10-16 (261016170901 question 4, for all nine tickets): the look-and-feel lines are checked by the reviewer in a browser with screenshots; no owner check, nothing deferred.

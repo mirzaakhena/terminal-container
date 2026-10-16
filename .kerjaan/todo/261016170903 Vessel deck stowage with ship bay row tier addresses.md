@@ -6,7 +6,7 @@ labels: [vessel, stowage]
 reporter: mirza
 assign_to: claude
 created: 2026-10-16 17:09:49
-updated: 2026-10-16 17:11:08
+updated: 2026-10-16 17:47:08
 related: [261016170902, 261008104605]
 blocked_by: [261016170902]
 ---
@@ -38,6 +38,8 @@ part-loaded demo ship can be generated.
 
 ## History
 - 2026-10-16 17:09:49 backlog
+- 2026-10-16 17:47:08 todo
 
 ## Notes
-(none yet)
+- 2026-10-16 17:19:37: files estimated to change: `src/models/vessel/`, `src/styles.css`, `src/views/VesselView.tsx`, `src/views/YardView.tsx`
+- Decision by mirza, 2026-10-16 (261016170901 question 4, for all nine tickets): the look-and-feel lines are checked by the reviewer in a browser with screenshots; no owner check, nothing deferred.

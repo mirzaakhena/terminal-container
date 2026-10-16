@@ -6,7 +6,7 @@ labels: [jobs, simulation, yard, quay]
 reporter: mirza
 assign_to: claude
 created: 2026-10-16 17:09:53
-updated: 2026-10-16 17:11:12
+updated: 2026-10-16 17:47:09
 related: [261016170906, 261008104608]
 blocked_by: [261016170906]
 ---
@@ -34,6 +34,9 @@ working in turn.
 
 ## History
 - 2026-10-16 17:09:53 backlog
+- 2026-10-16 17:47:09 todo
 
 ## Notes
-(none yet)
+- 2026-10-16 17:19:44: files estimated to change: `src/sim/`, `src/sim/jobs.ts`, `src/sim/quayJobs.ts`, `src/styles.css`, `src/ui/dashboard/DetailPanel.tsx`, `src/views/YardView.tsx`
+- 2026-10-16 17:20:08: files estimated to change: `src/sim/jobs.test.ts`, `src/sim/jobs.ts`, `src/sim/quayJobs.test.ts`, `src/sim/quayJobs.ts`, `src/styles.css`, `src/ui/dashboard/DetailPanel.tsx`, `src/views/YardView.tsx`
+- Decision by mirza, 2026-10-16 (261016170901 question 4, for all nine tickets): the look-and-feel lines are checked by the reviewer in a browser with screenshots; no owner check, nothing deferred.

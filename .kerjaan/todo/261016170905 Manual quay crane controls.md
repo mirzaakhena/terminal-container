@@ -6,7 +6,7 @@ labels: [quay-crane, controls]
 reporter: mirza
 assign_to: claude
 created: 2026-10-16 17:09:51
-updated: 2026-10-16 17:11:10
+updated: 2026-10-16 17:47:08
 related: [261016170904, 261008104607]
 blocked_by: [261016170903, 261016170904]
 ---
@@ -34,6 +34,8 @@ lanes.
 
 ## History
 - 2026-10-16 17:09:51 backlog
+- 2026-10-16 17:47:08 todo
 
 ## Notes
-(none yet)
+- 2026-10-16 17:19:41: files estimated to change: `README.md`, `e2e/quayCrane.spec.ts`, `src/models/quayCrane/`, `src/models/vessel/`, `src/sim/world.ts`, `src/styles.css`, `src/views/CraneView.tsx`, `src/views/QuayCraneView.tsx`
+- Decision by mirza, 2026-10-16 (261016170901 question 4, for all nine tickets): the look-and-feel lines are checked by the reviewer in a browser with screenshots; no owner check, nothing deferred.
