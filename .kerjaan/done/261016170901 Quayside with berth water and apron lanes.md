@@ -6,7 +6,7 @@ labels: [quay, scene]
 reporter: mirza
 assign_to: claude
 created: 2026-10-16 17:09:47
-updated: 2026-10-16 20:20:20
+updated: 2026-10-17 07:40:00
 related: []
 blocked_by: []
 ---
@@ -83,3 +83,4 @@ roads so a truck can drive from the gate to the quay and on to the yard block.
 
 - **The scale ruler lies on the quay.** With the grid on, the "10 m" ruler is drawn at a fixed spot, which now falls between the quay crane's landside rail and the first apron lane. It covers the apron in the Yard home view. Worth a ticket: each view places the ruler where it covers nothing of interest.
 - **The Trucks tab ignores the demo truck.** While a demo drive is on site, the top card counts 1 truck but the bottom-right Trucks tab says none. Worth a ticket: the tab lists the demo truck too, or the card leaves it out, so the two agree.
+- Decision by mirza, 2026-10-17: apron lanes stay numbered from the land side (lane 1 nearest the yard), as built.
