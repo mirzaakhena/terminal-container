@@ -3,6 +3,8 @@
 A 3D digital twin of a container terminal yard, built with React, Three.js and
 React Three Fiber. The visual style follows `docs/style-reference.png`.
 
+Live: https://mirzaakhena.github.io/terminal-container/
+
 ## Running
 
 Requires Node.js 20 or newer.
@@ -19,6 +21,12 @@ The view in the header can also be chosen with `?view=<id>` in the address.
 - Drag with the left mouse button to rotate, right button to pan, scroll to zoom.
 - The buttons on the right edge zoom, rotate by 45°, return to the home view,
   and show or hide the 10 m reference grid and ruler.
+
+## Deployment
+
+Every push to `main` builds the app and publishes it to GitHub Pages
+(`.github/workflows/pages.yml`). In the repository's Settings → Pages, the
+source must be set to **GitHub Actions**.
 
 ## Checks
 
